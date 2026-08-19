@@ -1,0 +1,67 @@
+:root {
+  --color-paper: oklch(97% 0.012 215);
+  --color-paper-raised: oklch(98.6% 0.008 215);
+  --color-ink: oklch(20% 0.014 230);
+  --color-ink-soft: oklch(40% 0.014 230);
+  --color-ink-faint: oklch(48% 0.012 225);
+  --color-accent: oklch(52% 0.14 235);
+  --color-accent-dark: oklch(38% 0.12 235);
+  --color-accent-soft: oklch(88% 0.055 225);
+  --color-accent-ink: oklch(98.6% 0.008 215);
+  --color-rule: oklch(78% 0.018 220);
+  --color-focus: oklch(50% 0.2 245);
+  --color-success: oklch(45% 0.11 150);
+  --color-error: oklch(48% 0.18 28);
+  --color-disabled: oklch(72% 0.012 220);
+  --color-hero-sky: oklch(91% 0.035 220);
+  --color-hero-sky-deep: oklch(83% 0.06 220);
+  --color-hero-grid: oklch(98% 0.012 215 / 0.72);
+  --color-workspace: oklch(98.6% 0.008 215);
+  --color-workspace-soft: oklch(95.2% 0.014 215);
+  --color-workspace-shadow: oklch(28% 0.025 230 / 0.16);
+  --color-overlay: oklch(16% 0.018 230 / 0.62);
+  --color-error-soft: oklch(94% 0.025 28);
+  --color-success-soft: oklch(93% 0.025 150);
+
+  --font-display: var(--font-newsreader), "Iowan Old Style", "Palatino Linotype", serif;
+  --font-body: var(--font-ibm-plex-sans), "Aptos", "Segoe UI", sans-serif;
+
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+  --space-5xl: 8rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-instant: 100ms;
+  --dur-short: 180ms;
+  --dur-long: 300ms;
+  --dur-progress: 900ms;
+
+  --rule-hairline: 1px;
+  --rule-strong: 2px;
+  --radius-sm: 0.2rem;
+  --radius-md: 0.4rem;
+  --radius-composer-field: 1.25rem;
+  --radius-composer: 2rem;
+  --radius-round: 999px;
+  --page-gutter: clamp(1rem, 4vw, 4rem);
+  --content-max: 90rem;
+  --z-dropdown: 100;
+  --z-modal: 400;
+}

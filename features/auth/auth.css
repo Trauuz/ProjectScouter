@@ -1,0 +1,283 @@
+/* Hallmark · component: authentication dialog · genre: editorial · theme: ProjectScout evidence-blue
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: ProjectScout token system · responsive: 320 / 375 / 414 / 768
+ * pre-emit critique: P5 H5 E5 S5 R5 V4
+ */
+
+.auth-dialog {
+  position: fixed;
+  z-index: var(--z-modal);
+  inset: 0;
+  width: min(calc(100% - var(--space-xl)), 30rem);
+  height: fit-content;
+  max-height: min(calc(100dvh - var(--space-xl)), 48rem);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--radius-composer-field);
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.auth-dialog[open] {
+  animation: auth-dialog-enter var(--dur-long) var(--ease-out) both;
+}
+
+.auth-dialog::backdrop {
+  background: var(--color-overlay);
+  animation: auth-backdrop-enter var(--dur-long) var(--ease-out) both;
+}
+
+.auth-dialog__surface {
+  position: relative;
+  max-height: min(calc(100dvh - var(--space-xl)), 48rem);
+  display: grid;
+  gap: var(--space-xl);
+  padding: clamp(var(--space-xl), 8vw, var(--space-3xl));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-paper-raised);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: calc(var(--radius-composer-field) * 1.5);
+  box-shadow: 
+    0 var(--space-xl) calc(var(--space-3xl) * 1.5) calc(var(--space-md) * -1) var(--color-workspace-shadow),
+    0 var(--space-sm) var(--space-md) calc(var(--space-xs) * -1) var(--color-workspace-shadow);
+}
+
+.auth-dialog__close {
+  position: absolute;
+  inset-block-start: var(--space-sm);
+  inset-inline-end: var(--space-sm);
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: var(--rule-hairline) solid transparent;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out),
+    transform var(--dur-instant) var(--ease-out);
+}
+
+.auth-dialog__header {
+  display: grid;
+  gap: var(--space-md);
+  padding-inline-end: var(--space-xl);
+}
+
+.auth-dialog__header h2 {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-xl), 7vw, var(--text-2xl));
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.auth-dialog__header p {
+  max-width: 42ch;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.auth-dialog__tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: var(--space-2xs);
+  background: var(--color-workspace-soft);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: calc(var(--radius-sm) * 1.25);
+}
+
+.auth-dialog__tabs button {
+  min-width: 0;
+  min-height: 2.75rem;
+  padding-inline: var(--space-sm);
+  border: var(--rule-hairline) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.auth-dialog__tabs button[aria-pressed="true"] {
+  border-color: var(--color-rule);
+  background: var(--color-paper-raised);
+  color: var(--color-ink);
+}
+
+.auth-form,
+.auth-dialog__confirmation {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.auth-field {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.auth-field label {
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.auth-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  padding: var(--space-sm) var(--space-md);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: calc(var(--radius-sm) * 1.25);
+  outline: var(--rule-strong) solid transparent;
+  outline-offset: var(--rule-hairline);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  transition: 
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
+}
+
+.auth-field input:focus-visible,
+.auth-dialog__close:focus-visible,
+.auth-dialog__tabs button:focus-visible,
+.auth-dialog__text-action:focus-visible {
+  outline: var(--rule-strong) solid var(--color-focus);
+  outline-offset: var(--space-2xs);
+}
+
+.auth-field input[aria-invalid="true"] {
+  border-color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.auth-field input:disabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.auth-field__message {
+  min-height: 1lh;
+  color: var(--color-ink-faint);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+
+.auth-field input[aria-invalid="true"] + .auth-field__message,
+.auth-form__error {
+  color: var(--color-error);
+}
+
+.auth-form__error {
+  padding: var(--space-sm);
+  border: var(--rule-hairline) solid var(--color-error);
+  border-radius: var(--radius-sm);
+  background: var(--color-error-soft);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.auth-dialog__submit {
+  width: 100%;
+  min-height: 3.25rem;
+  border-radius: calc(var(--radius-sm) * 1.25);
+  font-weight: 600;
+}
+
+.auth-dialog__text-action {
+  min-height: 2.75rem;
+  justify-self: center;
+  padding-inline: var(--space-sm);
+  border: var(--rule-hairline) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-accent-dark);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule-hairline);
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.auth-dialog__confirmation {
+  display: grid;
+  gap: var(--space-lg);
+  justify-items: center;
+  text-align: center;
+  padding-block: var(--space-md);
+}
+
+.auth-dialog__confirmation .auth-success-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  display: block;
+}
+
+.auth-dialog__confirmation p {
+  color: var(--color-ink-soft);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.auth-dialog__confirmation strong {
+  color: var(--color-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .auth-dialog__close:hover,
+  .auth-dialog__tabs button:hover,
+  .auth-dialog__text-action:hover {
+    background: var(--color-workspace-soft);
+    color: var(--color-ink);
+  }
+
+  .auth-field input:hover:not(:disabled) {
+    background: var(--color-workspace-soft);
+  }
+}
+
+.auth-dialog__close:active,
+.auth-dialog__tabs button:active,
+.auth-dialog__text-action:active {
+  transform: translateY(var(--rule-hairline));
+}
+
+@keyframes auth-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes auth-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-dialog[open],
+  .auth-dialog::backdrop {
+    animation-duration: var(--dur-instant);
+    transform: none;
+  }
+}
