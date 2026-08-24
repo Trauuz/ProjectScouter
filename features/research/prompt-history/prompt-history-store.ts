@@ -32,9 +32,11 @@ type StoragePort = Pick<Storage, "getItem" | "setItem">;
 
 export interface PromptHistoryStore {
   load(): string[];
+  loadEntries(): PromptHistoryEntry[];
   save(prompt: string): string[];
   saveCompleted(response: ResearchResponse): string[];
-  findCompleted(prompt: string): ResearchResponse | null;
+  delete(id: string): string[];
+  findCompleted(idOrPrompt: string): ResearchResponse | null;
 }
 
 function cleanPrompt(prompt: string): string {
@@ -248,8 +250,24 @@ export class LocalPromptHistoryStore implements PromptHistoryStore {
     ]);
   }
 
-  findCompleted(prompt: string): ResearchResponse | null {
-    return this.findEntry(prompt)?.result ?? null;
+  delete(id: string): string[] {
+    const entries = this.loadEntries();
+    if (!entries.some((entry) => entry.id === id)) {
+      return entries.map((entry) => entry.prompt);
+    }
+
+    const history = newestUniqueEntries(
+      entries.filter((entry) => entry.id !== id),
+    );
+    this.write(history);
+    return history.map((entry) => entry.prompt);
+  }
+
+  findCompleted(idOrPrompt: string): ResearchResponse | null {
+    const entry = this.loadEntries().find(
+      (candidate) => candidate.id === idOrPrompt,
+    );
+    return entry?.result ?? this.findEntry(idOrPrompt)?.result ?? null;
   }
 
   private findEntry(prompt: string): PromptHistoryEntry | undefined {
@@ -259,7 +277,7 @@ export class LocalPromptHistoryStore implements PromptHistoryStore {
     );
   }
 
-  private loadEntries(): PromptHistoryEntry[] {
+  loadEntries(): PromptHistoryEntry[] {
     try {
       return parseHistory(this.storage.getItem(PROMPT_HISTORY_STORAGE_KEY));
     } catch {
@@ -269,6 +287,17 @@ export class LocalPromptHistoryStore implements PromptHistoryStore {
 
   private persist(entries: PromptHistoryEntry[]): string[] {
     const history = newestUniqueEntries(entries);
+
+    try {
+      this.write(history);
+    } catch {
+      return history.map((entry) => entry.prompt);
+    }
+
+    return history.map((entry) => entry.prompt);
+  }
+
+  private write(history: PromptHistoryEntry[]): void {
     const payload: PromptHistoryPayload = {
       version: PROMPT_HISTORY_VERSION,
       entries: history,
@@ -276,11 +305,9 @@ export class LocalPromptHistoryStore implements PromptHistoryStore {
 
     try {
       this.storage.setItem(PROMPT_HISTORY_STORAGE_KEY, JSON.stringify(payload));
-    } catch {
-      return history.map((entry) => entry.prompt);
+    } catch (reason) {
+      throw new Error("Research history could not be updated.", { cause: reason });
     }
-
-    return history.map((entry) => entry.prompt);
   }
 }
 
@@ -325,10 +352,19 @@ export class MemoryPromptHistoryStore implements PromptHistoryStore {
     return this.load();
   }
 
-  findCompleted(prompt: string): ResearchResponse | null {
-    const identity = promptIdentity(cleanPrompt(prompt));
+  loadEntries(): PromptHistoryEntry[] {
+    return this.entries.map((entry) => ({ ...entry }));
+  }
+
+  delete(id: string): string[] {
+    this.entries = this.entries.filter((entry) => entry.id !== id);
+    return this.load();
+  }
+
+  findCompleted(idOrPrompt: string): ResearchResponse | null {
+    const identity = promptIdentity(cleanPrompt(idOrPrompt));
     return this.entries.find(
-      (entry) => promptIdentity(entry.prompt) === identity,
+      (entry) => entry.id === idOrPrompt || promptIdentity(entry.prompt) === identity,
     )?.result ?? null;
   }
 }

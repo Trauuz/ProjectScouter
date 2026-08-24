@@ -1,6 +1,9 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type {
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
 const MAX_COMPOSER_HEIGHT = 224;
 
@@ -16,6 +19,17 @@ function resizeComposer(textarea: HTMLTextAreaElement) {
 export function HeroComposer() {
   function handleInput(event: FormEvent<HTMLTextAreaElement>) {
     resizeComposer(event.currentTarget);
+  }
+
+  function handlePromptKeyDown(
+    event: ReactKeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
   }
 
   return (
@@ -37,6 +51,7 @@ export function HeroComposer() {
         data-enable-grammarly="false"
         suppressHydrationWarning
         onInput={handleInput}
+        onKeyDownCapture={handlePromptKeyDown}
       />
       <button
         className="hero-composer__submit"

@@ -1,12 +1,28 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthContext, type AuthContextValue } from "@/features/auth/auth-context";
 import { LocalPromptHistoryStore } from "../prompt-history/prompt-history-store";
 import { ResearchWorkspace } from "./research-workspace";
+
+const gsapMocks = vi.hoisted(() => ({
+  killTweensOf: vi.fn(),
+  registerPlugin: vi.fn(),
+  to: vi.fn(),
+}));
+
+vi.mock("gsap", () => ({
+  default: gsapMocks,
+}));
+
+vi.mock("@gsap/react", () => ({
+  useGSAP: () => ({
+    contextSafe: (callback: (...args: never[]) => unknown) => callback,
+  }),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
@@ -49,6 +65,22 @@ function renderWorkspace(
   );
 }
 
+function stubReducedMotion(matches: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+}
+
 const report = {
   prompt: "Budgeting tools for first-year college students",
   summary: "Students need semester-aware planning.",
@@ -79,8 +111,20 @@ const report = {
   })),
 };
 
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function close() {
+    this.removeAttribute("open");
+  };
+});
+
 afterEach(() => {
   window.localStorage.clear();
+  gsapMocks.killTweensOf.mockClear();
+  gsapMocks.to.mockClear();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -92,6 +136,156 @@ describe("ResearchWorkspace", () => {
 
     expect(screen.queryByText("Project research")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready for a prompt")).not.toBeInTheDocument();
+  });
+
+  it("renders the idle state inside an elevated state card", () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { container } = renderWorkspace({ initialPrompt: "" });
+
+    expect(container.querySelector(".research-empty__card")).toBeInTheDocument();
+  });
+
+  it("renders three recommendation-shaped loading cards", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)));
+
+    const { container } = renderWorkspace({ initialPrompt: report.prompt });
+
+    expect(await screen.findByText("Research in progress")).toBeInTheDocument();
+    expect(container.querySelectorAll(".research-loading__card")).toHaveLength(3);
+  });
+
+  it("submits the research prompt when Enter is pressed", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({ report, persistence: { status: "saved" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const prompt = screen.getByLabelText("Research prompt");
+    await user.type(prompt, report.prompt);
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(prompt).toHaveValue(report.prompt);
+  });
+
+  it("submits Enter even when the browser retains its composition flag", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({ report, persistence: { status: "saved" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const prompt = screen.getByLabelText("Research prompt");
+    await user.type(prompt, report.prompt);
+    fireEvent.keyDown(prompt, {
+      key: "Enter",
+      code: "Enter",
+      isComposing: true,
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(prompt).toHaveValue(report.prompt);
+  });
+
+  it("keeps Shift+Enter available for a prompt line break", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const prompt = screen.getByLabelText("Research prompt");
+    await user.type(prompt, "Compare finance apps");
+    await user.keyboard("{Shift>}{Enter}{/Shift}");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prompt).toHaveValue("Compare finance apps\n");
+  });
+
+  it("applies tactile feedback to submit and history controls", async () => {
+    stubReducedMotion(false);
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.save("A prior research prompt for design studios");
+    vi.stubGlobal("fetch", vi.fn());
+
+    renderWorkspace({ initialPrompt: "" });
+
+    const submit = screen.getByRole("button", { name: "Run research" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    const historyButton = within(history).getByRole("button", {
+      name: "A prior research prompt for design studios",
+    });
+
+    fireEvent.pointerDown(submit);
+    expect(gsapMocks.killTweensOf).toHaveBeenCalledWith(submit);
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      submit,
+      expect.objectContaining({ duration: 0.15, scale: 0.98 }),
+    );
+
+    fireEvent.pointerUp(submit);
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      submit,
+      expect.objectContaining({ clearProps: "transform", scale: 1 }),
+    );
+
+    fireEvent.pointerDown(historyButton);
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      historyButton,
+      expect.objectContaining({ scale: 0.98 }),
+    );
+  });
+
+  it("skips tactile feedback for disabled controls and reduced motion", () => {
+    stubReducedMotion(true);
+    vi.stubGlobal("fetch", vi.fn());
+
+    renderWorkspace(
+      { initialPrompt: "" },
+      authContext({ user: null, requireAuth: vi.fn(() => false) }),
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Run research" }));
+    expect(gsapMocks.to).not.toHaveBeenCalled();
+  });
+
+  it("applies tactile feedback to retry without changing retry behavior", async () => {
+    stubReducedMotion(false);
+    const fetchMock = vi.fn(async () =>
+      Response.json(
+        {
+          error: {
+            code: "PROVIDER_UNAVAILABLE",
+            message: "The research provider is temporarily unavailable.",
+            retryable: true,
+          },
+        },
+        { status: 503 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    await user.type(screen.getByLabelText("Research prompt"), report.prompt);
+    await user.click(screen.getByRole("button", { name: "Run research" }));
+
+    const retry = await screen.findByRole("button", { name: "Try again" });
+    gsapMocks.to.mockClear();
+    fireEvent.pointerDown(retry);
+    fireEvent.pointerUp(retry);
+    expect(gsapMocks.to).toHaveBeenCalledWith(
+      retry,
+      expect.objectContaining({ scale: 0.98 }),
+    );
+
+    await user.click(retry);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("runs the query once and shows three evidence-backed directions", async () => {
@@ -145,7 +339,9 @@ describe("ResearchWorkspace", () => {
     const history = await screen.findByRole("region", {
       name: "Previous prompts",
     });
-    const promptButtons = within(history).getAllByRole("button");
+    const promptButtons = within(history).getAllByRole("button", {
+      pressed: false,
+    });
     expect(promptButtons.map((button) => button.textContent)).toEqual([
       "The newest finance research prompt",
       "An older finance research prompt",
@@ -182,6 +378,140 @@ describe("ResearchWorkspace", () => {
     expect(screen.getAllByRole("article")).toHaveLength(3);
     expect(screen.getByText("Research complete")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("cancels deletion from previous prompts without changing the active session", async () => {
+    const inactivePrompt = "Research for independent neighborhood bookstores";
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.save(inactivePrompt);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", { name: report.prompt }));
+    await user.click(within(history).getByRole("button", {
+      name: `Delete research: ${inactivePrompt}`,
+    }));
+
+    expect(screen.getByLabelText("Research prompt")).toHaveValue(report.prompt);
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(historyStore.load()).toEqual([report.prompt, inactivePrompt]);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+  });
+
+  it("deletes an inactive previous prompt without disturbing the active report", async () => {
+    const inactivePrompt = "Research for independent neighborhood bookstores";
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.save(inactivePrompt);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", { name: report.prompt }));
+    await user.click(within(history).getByRole("button", {
+      name: `Delete research: ${inactivePrompt}`,
+    }));
+    expect(screen.getByLabelText("Research prompt")).toHaveValue(report.prompt);
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    await waitFor(() => expect(historyStore.load()).toEqual([report.prompt]));
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(screen.getByLabelText("Research prompt")).toHaveValue(report.prompt);
+    expect(within(history).queryByText(inactivePrompt)).not.toBeInTheDocument();
+  });
+
+  it("deletes the active session from the report header and returns to the idle state", async () => {
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", { name: report.prompt }));
+    await user.click(screen.getByRole("button", { name: /remove research/i }));
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    await waitFor(() => expect(historyStore.load()).toEqual([]));
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+    expect(screen.getByText("Results will collect here.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Research prompt")).toHaveValue("");
+    expect(screen.queryByRole("region", { name: "Previous prompts" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("deletes the active session from its history trash button", async () => {
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", { name: report.prompt }));
+    await user.click(within(history).getByRole("button", {
+      name: `Delete research: ${report.prompt}`,
+    }));
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    await waitFor(() => expect(historyStore.load()).toEqual([]));
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+    expect(screen.getByText("Results will collect here.")).toBeInTheDocument();
+  });
+
+  it("keeps the active item visible and reports a persistence deletion failure", async () => {
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", { name: report.prompt }));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Storage quota exceeded", "QuotaExceededError");
+    });
+    await user.click(screen.getByRole("button", { name: /remove research/i }));
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Research could not be deleted. Please try again.",
+    );
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(within(history).getByRole("button", { name: report.prompt }))
+      .toBeInTheDocument();
   });
 
   it("saves a submitted prompt without waiting for the provider response", async () => {

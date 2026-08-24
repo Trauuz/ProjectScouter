@@ -4,21 +4,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   createBrowserPromptHistoryStore,
+  type PromptHistoryEntry,
   type PromptHistoryStore,
 } from "./prompt-history-store";
 import type { ResearchResponse } from "@/server/research/domain/research-report";
 
 type PromptHistory = {
-  prompts: string[];
-  rememberPrompt(prompt: string): void;
-  rememberCompletedResearch(response: ResearchResponse): void;
-  findCompletedResearch(prompt: string): ResearchResponse | null;
+  entries: PromptHistoryEntry[];
+  rememberPrompt(prompt: string): string | null;
+  rememberCompletedResearch(response: ResearchResponse): string | null;
+  deleteResearch(id: string): Promise<void>;
+  findCompletedResearch(id: string): ResearchResponse | null;
 };
 
 const STORE_METHODS = [
   "load",
+  "loadEntries",
   "save",
   "saveCompleted",
+  "delete",
   "findCompleted",
 ] as const;
 
@@ -52,7 +56,7 @@ export function usePromptHistory(
   createStore: () => PromptHistoryStore = createBrowserPromptHistoryStore,
 ): PromptHistory {
   const storeRef = useRef<PromptHistoryStore | null>(null);
-  const [prompts, setPrompts] = useState<string[]>([]);
+  const [entries, setEntries] = useState<PromptHistoryEntry[]>([]);
 
   const getStore = useCallback(() => {
     storeRef.current = resolvePromptHistoryStore(storeRef.current, createStore);
@@ -60,32 +64,51 @@ export function usePromptHistory(
   }, [createStore]);
 
   useEffect(() => {
-    setPrompts(getStore().load());
+    setEntries(getStore().loadEntries());
   }, [getStore]);
 
   const rememberPrompt = useCallback(
     (prompt: string) => {
-      setPrompts(getStore().save(prompt));
+      const store = getStore();
+      store.save(prompt);
+      const nextEntries = store.loadEntries();
+      setEntries(nextEntries);
+      return nextEntries[0]?.id ?? null;
     },
     [getStore],
   );
 
   const rememberCompletedResearch = useCallback(
     (response: ResearchResponse) => {
-      setPrompts(getStore().saveCompleted(response));
+      const store = getStore();
+      store.saveCompleted(response);
+      const nextEntries = store.loadEntries();
+      setEntries(nextEntries);
+      return nextEntries[0]?.id ?? null;
+    },
+    [getStore],
+  );
+
+  const deleteResearch = useCallback(
+    async (id: string) => {
+      await Promise.resolve();
+      const store = getStore();
+      store.delete(id);
+      setEntries(store.loadEntries());
     },
     [getStore],
   );
 
   const findCompletedResearch = useCallback(
-    (prompt: string) => getStore().findCompleted(prompt),
+    (id: string) => getStore().findCompleted(id),
     [getStore],
   );
 
   return {
-    prompts,
+    entries,
     rememberPrompt,
     rememberCompletedResearch,
+    deleteResearch,
     findCompletedResearch,
   };
 }

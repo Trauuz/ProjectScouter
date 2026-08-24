@@ -9,12 +9,16 @@ import type { ResearchResponse } from "@/server/research/domain/research-report"
 
 class MemoryStorage implements Pick<Storage, "getItem" | "setItem"> {
   private readonly entries = new Map<string, string>();
+  failWrites = false;
 
   getItem(key: string): string | null {
     return this.entries.get(key) ?? null;
   }
 
   setItem(key: string, value: string): void {
+    if (this.failWrites) {
+      throw new DOMException("Storage quota exceeded", "QuotaExceededError");
+    }
     this.entries.set(key, value);
   }
 }
@@ -127,6 +131,52 @@ describe("LocalPromptHistoryStore", () => {
     expect(store.load()).toHaveLength(6);
   });
 
+  it("deletes exactly one complete research entry by its stable id", () => {
+    const storage = new MemoryStorage();
+    const store = new LocalPromptHistoryStore(storage);
+    store.save("Research prompt that must remain");
+    store.saveCompleted(completedResearch);
+    const deletedEntry = store.loadEntries().find(
+      (entry) => entry.prompt === completedResearch.report.prompt,
+    );
+
+    store.delete(deletedEntry!.id);
+
+    const restoredStore = new LocalPromptHistoryStore(storage);
+    expect(restoredStore.loadEntries()).toEqual([
+      expect.objectContaining({ prompt: "Research prompt that must remain" }),
+    ]);
+    expect(restoredStore.findCompleted(deletedEntry!.id)).toBeNull();
+  });
+
+  it("keeps persisted history intact when deleting cannot be saved", () => {
+    const storage = new MemoryStorage();
+    const store = new LocalPromptHistoryStore(storage);
+    store.saveCompleted(completedResearch);
+    const savedEntry = store.loadEntries()[0]!;
+    storage.failWrites = true;
+
+    expect(() => store.delete(savedEntry.id)).toThrow(
+      "Research history could not be updated.",
+    );
+
+    storage.failWrites = false;
+    expect(new LocalPromptHistoryStore(storage).loadEntries()).toEqual([
+      savedEntry,
+    ]);
+  });
+
+  it("deletes complete entries from the in-memory fallback store", () => {
+    const store = new MemoryPromptHistoryStore();
+    store.saveCompleted(completedResearch);
+    const savedEntry = store.loadEntries()[0]!;
+
+    store.delete(savedEntry.id);
+
+    expect(store.loadEntries()).toEqual([]);
+    expect(store.findCompleted(savedEntry.id)).toBeNull();
+  });
+
   it.each([
     ["local", () => new LocalPromptHistoryStore(new MemoryStorage())],
     ["memory", () => new MemoryPromptHistoryStore()],
@@ -136,6 +186,8 @@ describe("LocalPromptHistoryStore", () => {
     expect(typeof store.load).toBe("function");
     expect(typeof store.save).toBe("function");
     expect(typeof store.saveCompleted).toBe("function");
+    expect(typeof store.loadEntries).toBe("function");
+    expect(typeof store.delete).toBe("function");
     expect(typeof store.findCompleted).toBe("function");
 
     store.saveCompleted(completedResearch);

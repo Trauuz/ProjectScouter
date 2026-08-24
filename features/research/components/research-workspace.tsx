@@ -2,12 +2,18 @@
 
 import {
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(useGSAP);
 
 import { useAuth } from "@/features/auth";
 import { createPendingAuthIntentStore } from "@/features/auth/pending-auth-intent-store";
@@ -21,6 +27,8 @@ import type {
 } from "@/server/research/domain/research-report";
 
 import { usePromptHistory } from "../prompt-history/use-prompt-history";
+import type { PromptHistoryEntry } from "../prompt-history/prompt-history-store";
+import { DeleteResearchDialog } from "./delete-research-dialog";
 import { PromptHistory } from "./prompt-history";
 
 type ResearchState =
@@ -37,6 +45,9 @@ type ResearchWorkspaceProps = {
   initialPrompt: string;
   resumeIntentId?: string;
 };
+
+const TACTILE_TARGET_SELECTOR =
+  '[data-tactile="true"], .research-history__list button';
 
 class UnexpectedResearchResponse extends Error {
   readonly category = "unexpected_response";
@@ -126,6 +137,30 @@ function clientFailureMessage(reason: unknown): string {
   return "Research could not start because of an application error. Please try again.";
 }
 
+function tactileTarget(target: EventTarget | null): HTMLElement | null {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+
+  const element = target.closest<HTMLElement>(TACTILE_TARGET_SELECTOR);
+  if (
+    !element ||
+    element.matches(":disabled") ||
+    element.getAttribute("aria-disabled") === "true"
+  ) {
+    return null;
+  }
+
+  return element;
+}
+
+function reducedMotionRequested(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 function sourceDate(source: ResearchSource): string {
   if (!source.publishedAt) {
     return "Date unavailable";
@@ -162,8 +197,9 @@ function EvidenceLinks({
 
         return (
           <li key={source.id}>
-            <a href={`#${source.id}`}>
-              [{source.id.replace("src-", "")}] {source.title}
+            <a href={`#${source.id}`} className="evidence-chip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <span>[{source.id.replace("src-", "")}] {source.title}</span>
             </a>
           </li>
         );
@@ -182,17 +218,20 @@ function RecommendationCard({
   sources: ResearchSource[];
 }) {
   return (
-    <article className="recommendation-card">
+    <article
+      className="recommendation-card"
+      data-tactile="true"
+    >
       <header className="recommendation-card__header">
-        <p className="recommendation-card__number" aria-hidden="true">
-          {String(number).padStart(2, "0")}
-        </p>
-        <div>
+        <div className="recommendation-card__header-top">
+          <p className="recommendation-card__number" aria-hidden="true">
+            {String(number).padStart(2, "0")}
+          </p>
           <p className="recommendation-card__scope">
             {recommendation.scopeEstimate} scope · {recommendation.evidenceStrength} evidence
           </p>
-          <h4>{recommendation.title}</h4>
         </div>
+        <h4>{recommendation.title}</h4>
       </header>
 
       {recommendation.weakEvidence ? (
@@ -292,10 +331,24 @@ function ResearchLoading({ prompt }: { prompt: string }) {
       </header>
       <div className="research-loading__skeleton" aria-hidden="true">
         {[1, 2, 3].map((number) => (
-          <div className="research-loading__row" key={number}>
-            <span>{String(number).padStart(2, "0")}</span>
-            <div>
-              <i />
+          <div className="research-loading__card" key={number}>
+            <div className="research-loading__card-header">
+              <span>{String(number).padStart(2, "0")}</span>
+              <div>
+                <i />
+                <i />
+              </div>
+            </div>
+            <div className="research-loading__summary">
+              {[1, 2, 3].map((section) => (
+                <div key={section}>
+                  <i />
+                  <i />
+                  <i />
+                </div>
+              ))}
+            </div>
+            <div className="research-loading__chips">
               <i />
               <i />
             </div>
@@ -310,17 +363,19 @@ function ResearchLoading({ prompt }: { prompt: string }) {
 function ResearchIdle() {
   return (
     <div className="research-empty">
-      <div className="research-empty__document" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div>
-        <h2>Results will collect here.</h2>
-        <p>
-          Enter a focused project topic. ProjectScout will return three
-          directions with supporting public evidence.
-        </p>
+      <div className="research-empty__card">
+        <div className="research-empty__document" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="research-empty__copy">
+          <h2>Results will collect here.</h2>
+          <p>
+            Enter a focused project topic. ProjectScout will return three
+            directions with supporting public evidence.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -335,16 +390,82 @@ export function ResearchWorkspace({
   const [prompt, setPrompt] = useState(initialPrompt);
   const [lastSubmittedPrompt, setLastSubmittedPrompt] = useState(initialPrompt);
   const [state, setState] = useState<ResearchState>({ status: "idle" });
+  const [activeResearchId, setActiveResearchId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PromptHistoryEntry | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const {
-    prompts: promptHistory,
+    entries: promptHistory,
     rememberPrompt,
     rememberCompletedResearch,
+    deleteResearch,
     findCompletedResearch,
   } = usePromptHistory();
   const controllerRef = useRef<AbortController | null>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const autoStartedRef = useRef(false);
   const resumeStartedRef = useRef<string | null>(null);
   const directGateOpenedRef = useRef(false);
+  const { contextSafe } = useGSAP({ scope: workspaceRef });
+
+  const handleTactilePointerDown = contextSafe(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const target = tactileTarget(event.target);
+      if (!target || reducedMotionRequested()) {
+        return;
+      }
+
+      gsap.killTweensOf(target);
+      gsap.to(target, {
+        scale: 0.98,
+        duration: 0.15,
+        ease: "power2.out",
+      });
+    },
+  );
+
+  const handleTactilePointerRelease = contextSafe(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const target = tactileTarget(event.target);
+      if (!target || reducedMotionRequested()) {
+        return;
+      }
+
+      gsap.killTweensOf(target);
+      gsap.to(target, {
+        scale: 1,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.5)",
+        clearProps: "transform",
+      });
+    },
+  );
+
+  const handleTactilePointerOut = contextSafe(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const target = tactileTarget(event.target);
+      if (!target) {
+        return;
+      }
+
+      const nextTarget = event.relatedTarget;
+      if (nextTarget instanceof Node && target.contains(nextTarget)) {
+        return;
+      }
+
+      if (reducedMotionRequested()) {
+        return;
+      }
+
+      gsap.killTweensOf(target);
+      gsap.to(target, {
+        scale: 1,
+        duration: 0.5,
+        ease: "elastic.out(1, 0.5)",
+        clearProps: "transform",
+      });
+    },
+  );
 
   const runResearch = useCallback(async (nextPrompt: string) => {
     const trimmedPrompt = nextPrompt.trim();
@@ -364,7 +485,7 @@ export function ResearchWorkspace({
       return;
     }
 
-    rememberPrompt(trimmedPrompt);
+    setActiveResearchId(rememberPrompt(trimmedPrompt));
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -411,7 +532,7 @@ export function ResearchWorkspace({
           status: "failed",
         },
       };
-      rememberCompletedResearch(completedResearch);
+      setActiveResearchId(rememberCompletedResearch(completedResearch));
       setState({
         status: "success",
         report: completedResearch.report,
@@ -488,11 +609,28 @@ export function ResearchWorkspace({
     void runResearch(prompt);
   }
 
-  function restoreSavedSession(savedPrompt: string) {
+  function handlePromptKeyDown(
+    event: ReactKeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  }
+
+  function restoreSavedSession(id: string) {
+    const savedSession = promptHistory.find((entry) => entry.id === id);
+    if (!savedSession) {
+      return;
+    }
+
     controllerRef.current?.abort();
-    setPrompt(savedPrompt);
-    setLastSubmittedPrompt(savedPrompt);
-    const completedResearch = findCompletedResearch(savedPrompt);
+    setPrompt(savedSession.prompt);
+    setLastSubmittedPrompt(savedSession.prompt);
+    setActiveResearchId(savedSession.id);
+    const completedResearch = findCompletedResearch(savedSession.id);
     if (!completedResearch) {
       setState({ status: "idle" });
       return;
@@ -504,13 +642,63 @@ export function ResearchWorkspace({
     });
   }
 
+  function requestResearchDeletion(id: string) {
+    const entry = promptHistory.find((candidate) => candidate.id === id);
+    if (!entry) {
+      return;
+    }
+    setDeleteError("");
+    setDeleteTarget(entry);
+  }
+
+  function cancelResearchDeletion() {
+    if (deleting) {
+      return;
+    }
+    setDeleteError("");
+    setDeleteTarget(null);
+  }
+
+  async function confirmResearchDeletion() {
+    if (!deleteTarget || deleting) {
+      return;
+    }
+
+    const deletedId = deleteTarget.id;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteResearch(deletedId);
+      if (deletedId === activeResearchId) {
+        controllerRef.current?.abort();
+        setPrompt("");
+        setLastSubmittedPrompt("");
+        setActiveResearchId(null);
+        setState({ status: "idle" });
+      }
+      setDeleteTarget(null);
+    } catch {
+      setDeleteError("Research could not be deleted. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const submittedPrompt = lastSubmittedPrompt || prompt.trim();
+  const activeEntry = promptHistory.find(
+    (entry) => entry.id === activeResearchId,
+  ) ?? null;
 
   return (
     <div
       className="research-workspace"
+      ref={workspaceRef}
       data-auth-locked={!auth.user || undefined}
       inert={!auth.user ? true : undefined}
+      onPointerDownCapture={handleTactilePointerDown}
+      onPointerUpCapture={handleTactilePointerRelease}
+      onPointerCancelCapture={handleTactilePointerRelease}
+      onPointerOutCapture={handleTactilePointerOut}
     >
       <div className="research-workspace__body">
         <aside className="research-request" aria-label="Research request">
@@ -540,12 +728,15 @@ export function ResearchWorkspace({
               aria-describedby="research-prompt-hint"
               aria-invalid={state.status === "error" && !state.retryable}
               onChange={(event) => setPrompt(event.currentTarget.value)}
+              onKeyDownCapture={handlePromptKeyDown}
             />
             <p className="research-form__hint" id="research-prompt-hint">
-              Public sources only · 10–500 characters
+              Public sources only · 10–500 characters · Enter to run ·
+              Shift+Enter for a new line
             </p>
             <button
               className="button research-form__submit"
+              data-tactile="true"
               type="submit"
               disabled={!auth.user || state.status === "loading"}
             >
@@ -559,7 +750,9 @@ export function ResearchWorkspace({
 
           {promptHistory.length > 0 ? (
             <PromptHistory
-              prompts={promptHistory}
+              entries={promptHistory}
+              activeId={activeResearchId}
+              onDelete={requestResearchDeletion}
               onSelect={restoreSavedSession}
             />
           ) : (
@@ -594,6 +787,7 @@ export function ResearchWorkspace({
                 {state.retryable ? (
                   <button
                     className="button"
+                    data-tactile="true"
                     type="button"
                     onClick={() => void runResearch(lastSubmittedPrompt)}
                   >
@@ -622,12 +816,41 @@ export function ResearchWorkspace({
           {state.status === "success" ? (
             <div className="research-report">
               <header className="research-report__header">
-                <div className="research-report__status">
-                  <span aria-hidden="true" />
-                  <p>Research complete</p>
-                  <time dateTime={state.report.generatedAt}>
-                    {completedDate(state.report.generatedAt)}
-                  </time>
+                <div className="research-report__header-row">
+                  <div className="research-report__status">
+                    <span aria-hidden="true" />
+                    <p>Research complete</p>
+                    <time dateTime={state.report.generatedAt}>
+                      {completedDate(state.report.generatedAt)}
+                    </time>
+                  </div>
+                  {activeEntry ? (
+                    <button
+                      className="research-report__remove"
+                      data-tactile="true"
+                      type="button"
+                      aria-label="Remove research from history"
+                      onClick={() => requestResearchDeletion(activeEntry.id)}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="m19 6-1 14H6L5 6" />
+                        <path d="M10 11v5M14 11v5" />
+                      </svg>
+                      <span>Remove</span>
+                    </button>
+                  ) : null}
                 </div>
                 <h2>{state.report.prompt}</h2>
                 <div className="research-report__metrics" aria-label="Report summary">
@@ -690,6 +913,13 @@ export function ResearchWorkspace({
           ) : null}
         </section>
       </div>
+      <DeleteResearchDialog
+        entry={deleteTarget}
+        error={deleteError}
+        deleting={deleting}
+        onCancel={cancelResearchDeletion}
+        onConfirm={confirmResearchDeletion}
+      />
     </div>
   );
 }
