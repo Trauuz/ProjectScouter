@@ -52,6 +52,19 @@ describe("research viewport layout", () => {
     );
   });
 
+  it("uses one report divider and aligns removal with the report title", () => {
+    const reportHeader = rule(".research-page .research-report__header");
+    expect(reportHeader).not.toContain(
+      "border-block-end",
+    );
+    expect(reportHeader).toContain("padding-block-end: 0");
+    expect(rule(".research-report__title-row")).toContain("display: flex");
+    expect(rule(".research-report__title-row")).toContain("align-items: center");
+    expect(rule(".research-report__title-row")).toContain(
+      "justify-content: space-between",
+    );
+  });
+
   it("caps the sidebar on wide screens and keeps mobile results usable", () => {
     expect(styles).toContain(
       "grid-template-columns: clamp(19rem, 27vw, 26rem) minmax(0, 1fr)",
@@ -66,6 +79,28 @@ describe("research viewport layout", () => {
     );
     expect(rule(".research-page .source-index ol")).toContain(
       "gap: 0 var(--space-xl)",
+    );
+  });
+
+  it("matches the authentication modal surface at every viewport", () => {
+    expect(rule(".delete-research-dialog")).toContain(
+      "max-height: min(calc(100dvh - var(--space-xl)), 48rem)",
+    );
+
+    const surface = rule(".delete-research-dialog__surface");
+    expect(surface).toContain("position: relative");
+    expect(surface).toContain("gap: var(--space-xl)");
+    expect(surface).toContain(
+      "padding: clamp(var(--space-xl), 8vw, var(--space-3xl))",
+    );
+    expect(surface).toContain("overflow-y: auto");
+    expect(surface).toContain("overscroll-behavior: contain");
+
+    expect(rule(".delete-research-dialog__close")).toContain(
+      "width: 2.75rem",
+    );
+    expect(rule(".delete-research-dialog__actions")).toContain(
+      "grid-template-columns: minmax(0, 1fr)",
     );
   });
 });

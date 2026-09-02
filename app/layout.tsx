@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/features/auth";
+import { SmoothScroll } from "@/shared/layout/smooth-scroll";
 import { getOptionalAuthIdentity } from "@/server/auth/get-auth-identity";
 import "@/features/auth/auth.css";
 import "./globals.css";
@@ -40,12 +41,13 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      data-scroll-behavior="smooth"
+      
       className={`${newsreader.variable} ${ibmPlexSans.variable}`}
     >
       <body suppressHydrationWarning>
-        <AuthProvider initialUser={initialUser}>{children}</AuthProvider>
+        <SmoothScroll><AuthProvider initialUser={initialUser}>{children}</AuthProvider></SmoothScroll>
       </body>
     </html>
   );
 }
+

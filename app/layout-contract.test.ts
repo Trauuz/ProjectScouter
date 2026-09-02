@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const layoutSource = readFileSync(new URL("./layout.tsx", import.meta.url), "utf8");
 
 describe("root html contract", () => {
-  it("declares the smooth-scroll behavior expected by Next.js route transitions", () => {
-    expect(layoutSource).toContain('data-scroll-behavior="smooth"');
+  it("wraps the application in SmoothScroll to provide smooth scrolling using Lenis", () => {
+    expect(layoutSource).toContain('<SmoothScroll>');
   });
 });

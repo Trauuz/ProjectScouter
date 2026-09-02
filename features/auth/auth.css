@@ -155,7 +155,8 @@
 .auth-field input:focus-visible,
 .auth-dialog__close:focus-visible,
 .auth-dialog__tabs button:focus-visible,
-.auth-dialog__text-action:focus-visible {
+.auth-dialog__text-action:focus-visible,
+.auth-dialog__legal a:focus-visible {
   outline: var(--rule-strong) solid var(--color-focus);
   outline-offset: var(--space-2xs);
 }
@@ -215,6 +216,37 @@
   cursor: pointer;
 }
 
+.auth-dialog__legal {
+  padding-block-start: var(--space-md);
+  border-block-start: var(--rule-hairline) solid var(--color-rule);
+  color: var(--color-ink-faint);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.auth-dialog__legal .legal-links {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.auth-dialog__legal a {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-xs);
+  color: var(--color-accent-dark);
+  text-decoration: underline;
+  text-decoration-thickness: var(--rule-hairline);
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+  transition:
+    color var(--dur-short) var(--ease-out),
+    text-decoration-thickness var(--dur-short) var(--ease-out);
+}
+
 .auth-dialog__confirmation {
   display: grid;
   gap: var(--space-lg);
@@ -249,6 +281,11 @@
 
   .auth-field input:hover:not(:disabled) {
     background: var(--color-workspace-soft);
+  }
+
+  .auth-dialog__legal a:hover {
+    color: var(--color-accent);
+    text-decoration-thickness: var(--rule-strong);
   }
 }
 

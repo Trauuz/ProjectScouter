@@ -2,6 +2,8 @@
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
+import { LegalLinks } from "@/shared/legal/legal-links";
+
 import { useAuth, type AuthMode } from "./auth-context";
 import {
   validateEmail,
@@ -306,6 +308,22 @@ export function AuthDialog() {
             ) : null}
           </form>
         )}
+
+        <p className="auth-dialog__legal">
+          {auth.mode === "signup" ? (
+            <>
+              By creating an account, you agree to our{" "}
+              <LegalLinks
+                onNavigate={auth.closeAuth}
+                order="terms-first"
+                separator=" and "
+              />
+              .
+            </>
+          ) : (
+            <LegalLinks onNavigate={auth.closeAuth} />
+          )}
+        </p>
       </div>
     </dialog>
   );

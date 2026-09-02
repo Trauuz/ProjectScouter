@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LegalLinks } from "@/shared/legal/legal-links";
+
 export function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -14,6 +16,7 @@ export function SiteFooter() {
           <Link href="/">Home</Link>
           <Link href="/research">Start research</Link>
         </nav>
+        <LegalLinks className="site-footer__legal" />
       </div>
     </footer>
   );

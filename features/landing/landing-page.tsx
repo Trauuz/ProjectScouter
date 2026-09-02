@@ -4,13 +4,15 @@ import { MotionScene } from "@/shared/motion/motion-scene";
 import { StartResearchButton } from "@/features/auth";
 
 import { ResearchMap } from "./components/research-map";
+import { LandingStory, TrustStrip } from "./components/landing-story";
+import { ScrollGuide } from "./components/scroll-guide";
 
 export function LandingPage() {
   return (
     <MotionScene>
       <SiteHeader />
       <main id="top">
-        <section className="hero" aria-labelledby="hero-title">
+        <section className="hero" id="hero" aria-labelledby="hero-title">
           <div className="hero__bg" data-animate="hero-bg" />
           <div className="hero__copy">
             <p className="hero__eyebrow" data-animate="hero-aside">
@@ -32,6 +34,10 @@ export function LandingPage() {
           <ResearchMap />
         </section>
 
+        <ScrollGuide preview={<TrustStrip />} />
+
+        <LandingStory />
+
         <section
           className="direction-cta"
           id="research"
@@ -39,8 +45,7 @@ export function LandingPage() {
         >
           <h2 id="direction-title">Ready to test a direction?</h2>
           <p>
-            Start with the topic you keep circling and let the evidence shape
-            the next move.
+            Bring a rough topic. Leave with three evidence-backed directions.
           </p>
           <StartResearchButton className="button direction-cta__button">
             Get started for free

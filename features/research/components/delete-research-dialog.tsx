@@ -84,8 +84,7 @@ export function DeleteResearchDialog({
       }}
     >
       <form className="delete-research-dialog__surface" onSubmit={handleSubmit}>
-        <header>
-          <p className="delete-research-dialog__eyebrow">Saved research</p>
+        <header className="delete-research-dialog__header">
           <h2 id="delete-research-title">Delete research?</h2>
           <p id="delete-research-description">
             This will remove this saved research and its result from your history.
@@ -93,25 +92,44 @@ export function DeleteResearchDialog({
         </header>
 
         {entry ? (
-          <p className="delete-research-dialog__prompt" title={entry.prompt}>
-            {entry.prompt}
-          </p>
+          <div className="delete-research-dialog__selection">
+            <span>Research to delete</span>
+            <p className="delete-research-dialog__prompt" title={entry.prompt}>
+              {entry.prompt}
+            </p>
+          </div>
         ) : null}
 
         {error ? <p className="delete-research-dialog__error" role="alert">{error}</p> : null}
 
         <div className="delete-research-dialog__actions">
-          <button type="button" className="button" disabled={deleting} onClick={cancel}>
+          <button
+            type="button"
+            className="button delete-research-dialog__cancel"
+            disabled={deleting}
+            onClick={cancel}
+          >
             Cancel
           </button>
           <button
             type="submit"
             className="button delete-research-dialog__confirm"
             disabled={deleting}
+            data-state={deleting ? "loading" : undefined}
           >
             {deleting ? "Deleting…" : "Delete research"}
           </button>
         </div>
+
+        <button
+          className="delete-research-dialog__close"
+          type="button"
+          aria-label="Close delete confirmation"
+          disabled={deleting}
+          onClick={cancel}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </form>
     </dialog>
   );

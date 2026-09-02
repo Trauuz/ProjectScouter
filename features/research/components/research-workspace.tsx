@@ -29,7 +29,7 @@ import type {
 import { usePromptHistory } from "../prompt-history/use-prompt-history";
 import type { PromptHistoryEntry } from "../prompt-history/prompt-history-store";
 import { DeleteResearchDialog } from "./delete-research-dialog";
-import { PromptHistory } from "./prompt-history";
+import { PromptHistory, type PromptHistoryHandle } from "./prompt-history";
 
 type ResearchState =
   | { status: "idle" }
@@ -402,6 +402,7 @@ export function ResearchWorkspace({
     findCompletedResearch,
   } = usePromptHistory();
   const controllerRef = useRef<AbortController | null>(null);
+  const promptHistoryRef = useRef<PromptHistoryHandle>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const autoStartedRef = useRef(false);
   const resumeStartedRef = useRef<string | null>(null);
@@ -643,6 +644,9 @@ export function ResearchWorkspace({
   }
 
   function requestResearchDeletion(id: string) {
+    if (deleting) {
+      return;
+    }
     const entry = promptHistory.find((candidate) => candidate.id === id);
     if (!entry) {
       return;
@@ -668,6 +672,7 @@ export function ResearchWorkspace({
     setDeleting(true);
     setDeleteError("");
     try {
+      await promptHistoryRef.current?.animateDeletion(deletedId);
       await deleteResearch(deletedId);
       if (deletedId === activeResearchId) {
         controllerRef.current?.abort();
@@ -678,6 +683,7 @@ export function ResearchWorkspace({
       }
       setDeleteTarget(null);
     } catch {
+      promptHistoryRef.current?.restoreDeletion(deletedId);
       setDeleteError("Research could not be deleted. Please try again.");
     } finally {
       setDeleting(false);
@@ -706,13 +712,6 @@ export function ResearchWorkspace({
             <h2>Your request</h2>
             <p>Shape the question that guides the research.</p>
           </div>
-
-          {submittedPrompt ? (
-            <div className="research-request__submitted">
-              <span>Current topic</span>
-              <p>{submittedPrompt}</p>
-            </div>
-          ) : null}
 
           <form className="research-form" onSubmit={handleSubmit}>
             <label htmlFor="research-prompt">Research prompt</label>
@@ -750,8 +749,10 @@ export function ResearchWorkspace({
 
           {promptHistory.length > 0 ? (
             <PromptHistory
+              ref={promptHistoryRef}
               entries={promptHistory}
               activeId={activeResearchId}
+              deletingId={deleting ? deleteTarget?.id ?? null : null}
               onDelete={requestResearchDeletion}
               onSelect={restoreSavedSession}
             />
@@ -816,14 +817,15 @@ export function ResearchWorkspace({
           {state.status === "success" ? (
             <div className="research-report">
               <header className="research-report__header">
-                <div className="research-report__header-row">
-                  <div className="research-report__status">
-                    <span aria-hidden="true" />
-                    <p>Research complete</p>
-                    <time dateTime={state.report.generatedAt}>
-                      {completedDate(state.report.generatedAt)}
-                    </time>
-                  </div>
+                <div className="research-report__status">
+                  <span aria-hidden="true" />
+                  <p>Research complete</p>
+                  <time dateTime={state.report.generatedAt}>
+                    {completedDate(state.report.generatedAt)}
+                  </time>
+                </div>
+                <div className="research-report__title-row">
+                  <h2>{state.report.prompt}</h2>
                   {activeEntry ? (
                     <button
                       className="research-report__remove"
@@ -852,7 +854,6 @@ export function ResearchWorkspace({
                     </button>
                   ) : null}
                 </div>
-                <h2>{state.report.prompt}</h2>
                 <div className="research-report__metrics" aria-label="Report summary">
                   <span>{pluralize(state.report.recommendations.length, "direction")}</span>
                   <span>{pluralize(state.report.sources.length, "source")}</span>

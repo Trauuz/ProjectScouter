@@ -57,6 +57,37 @@ describe("AuthDialog", () => {
       .toBeInTheDocument();
   });
 
+  it("keeps both legal routes accessible from login without submitting", async () => {
+    const closeAuth = vi.fn();
+    const signIn = vi.fn(async () => ({ ok: true as const }));
+    const user = userEvent.setup();
+    renderDialog(context({ closeAuth, signIn }));
+
+    const privacyLink = screen.getByRole("link", { name: "Privacy Policy" });
+    const termsLink = screen.getByRole("link", { name: "Terms of Service" });
+    expect(privacyLink).toHaveAttribute("href", "/privacy-policy");
+    expect(termsLink).toHaveAttribute("href", "/terms-of-service");
+    privacyLink.addEventListener("click", (event) => event.preventDefault());
+
+    await user.click(privacyLink);
+
+    expect(closeAuth).toHaveBeenCalledOnce();
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it("puts the service agreement directly beside account creation", () => {
+    renderDialog(context({ mode: "signup" }));
+
+    const legalNotice = screen.getByText(/By creating an account/);
+    expect(legalNotice).toHaveTextContent(
+      "By creating an account, you agree to our Terms of Service and Privacy Policy.",
+    );
+    expect(screen.getByRole("link", { name: "Terms of Service" }))
+      .toHaveAttribute("href", "/terms-of-service");
+    expect(screen.getByRole("link", { name: "Privacy Policy" }))
+      .toHaveAttribute("href", "/privacy-policy");
+  });
+
   it("closes when a click starts and ends on the backdrop", () => {
     const closeAuth = vi.fn();
     renderDialog(context({ closeAuth }));

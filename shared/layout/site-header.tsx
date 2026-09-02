@@ -1,15 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 
 import { useAuth } from "@/features/auth";
 
 const navigation = [
-  { href: "/#research", label: "Start" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#evidence", label: "Evidence" },
 ];
 
 export function SiteHeader() {
   const auth = useAuth();
+  const mobileNavigation = useRef<HTMLDetailsElement>(null);
+
+  function closeMobileNavigation() {
+    if (mobileNavigation.current) {
+      mobileNavigation.current.open = false;
+    }
+  }
 
   const unauthenticatedActions = (
     <div className="site-auth-actions">
@@ -63,17 +72,34 @@ export function SiteHeader() {
       </nav>
 
       <div className="site-header__action">
+        <Link
+          className="button site-header__research-link"
+          href="/research"
+        >
+          Open research
+        </Link>
         {auth.user ? accountMenu : unauthenticatedActions}
       </div>
 
-      <details className="mobile-nav">
+      <details className="mobile-nav" ref={mobileNavigation}>
         <summary>Menu</summary>
         <nav aria-label="Mobile navigation">
           {navigation.map((item) => (
-            <Link key={item.href} href={item.href}>
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={closeMobileNavigation}
+            >
               {item.label}
             </Link>
           ))}
+          <Link
+            className="button site-header__research-link"
+            href="/research"
+            onClick={closeMobileNavigation}
+          >
+            Open research
+          </Link>
           {auth.user ? accountMenu : unauthenticatedActions}
         </nav>
       </details>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,8 +9,28 @@ import { LocalPromptHistoryStore } from "../prompt-history/prompt-history-store"
 import { ResearchWorkspace } from "./research-workspace";
 
 const gsapMocks = vi.hoisted(() => ({
+  autoCompleteTimeline: true,
   killTweensOf: vi.fn(),
   registerPlugin: vi.fn(),
+  set: vi.fn(),
+  timelineCompletions: [] as Array<() => void>,
+  timelineKill: vi.fn(),
+  timelineTo: vi.fn(),
+  timeline: vi.fn((options?: { onComplete?(): void }) => {
+    const complete = () => options?.onComplete?.();
+    const instance = {
+      kill: gsapMocks.timelineKill,
+      to: (...args: unknown[]) => {
+        gsapMocks.timelineTo(...args);
+        return instance;
+      },
+    };
+    gsapMocks.timelineCompletions.push(complete);
+    if (gsapMocks.autoCompleteTimeline) {
+      queueMicrotask(complete);
+    }
+    return instance;
+  }),
   to: vi.fn(),
 }));
 
@@ -123,6 +143,12 @@ beforeEach(() => {
 afterEach(() => {
   window.localStorage.clear();
   gsapMocks.killTweensOf.mockClear();
+  gsapMocks.set.mockClear();
+  gsapMocks.timeline.mockClear();
+  gsapMocks.timelineCompletions.length = 0;
+  gsapMocks.timelineKill.mockClear();
+  gsapMocks.timelineTo.mockClear();
+  gsapMocks.autoCompleteTimeline = true;
   gsapMocks.to.mockClear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -377,6 +403,11 @@ describe("ResearchWorkspace", () => {
     expect(screen.getByLabelText("Research prompt")).toHaveValue(report.prompt);
     expect(screen.getAllByRole("article")).toHaveLength(3);
     expect(screen.getByText("Research complete")).toBeInTheDocument();
+    const reportTitle = screen.getByRole("heading", { name: report.prompt });
+    const removeButton = screen.getByRole("button", {
+      name: "Remove research from history",
+    });
+    expect(reportTitle.parentElement).toContainElement(removeButton);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -402,7 +433,11 @@ describe("ResearchWorkspace", () => {
 
     expect(screen.getByLabelText("Research prompt")).toHaveValue(report.prompt);
     expect(screen.getAllByRole("article")).toHaveLength(3);
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByText("Saved research")).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", {
+      name: "Close delete confirmation",
+    }));
 
     expect(historyStore.load()).toEqual([report.prompt, inactivePrompt]);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -486,6 +521,94 @@ describe("ResearchWorkspace", () => {
     expect(screen.getByText("Results will collect here.")).toBeInTheDocument();
   });
 
+  it("finishes the GSAP history exit before deleting the persisted entry", async () => {
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.saveCompleted({
+      report,
+      persistence: { status: "saved", runId: "active-run" },
+    });
+    gsapMocks.autoCompleteTimeline = false;
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", {
+      name: `Delete research: ${report.prompt}`,
+    }));
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    expect(historyStore.load()).toEqual([report.prompt]);
+    expect(within(history).getByRole("button", {
+      name: `Delete research: ${report.prompt}`,
+    })).toBeDisabled();
+    expect(gsapMocks.timeline).toHaveBeenCalledOnce();
+    expect(gsapMocks.timelineTo).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ autoAlpha: 0, scale: 0.96, x: 20 }),
+    );
+
+    await act(async () => {
+      gsapMocks.timelineCompletions[0]?.();
+    });
+
+    await waitFor(() => expect(historyStore.load()).toEqual([]));
+  });
+
+  it("uses a minimal history exit when reduced motion is requested", async () => {
+    stubReducedMotion(true);
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.save(report.prompt);
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    await user.click(within(history).getByRole("button", {
+      name: `Delete research: ${report.prompt}`,
+    }));
+    await user.click(screen.getByRole("button", { name: "Delete research" }));
+
+    await waitFor(() => expect(historyStore.load()).toEqual([]));
+    expect(gsapMocks.timelineTo).toHaveBeenCalledTimes(1);
+    expect(gsapMocks.timelineTo).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ autoAlpha: 0, duration: 0.08 }),
+    );
+  });
+
+  it("animates and deletes multiple history items sequentially", async () => {
+    const olderPrompt = "Research tools for neighborhood repair cafes";
+    const newerPrompt = "Research tools for independent music teachers";
+    const historyStore = new LocalPromptHistoryStore(window.localStorage);
+    historyStore.save(olderPrompt);
+    historyStore.save(newerPrompt);
+    vi.stubGlobal("fetch", vi.fn());
+    const user = userEvent.setup();
+
+    renderWorkspace({ initialPrompt: "" });
+    const history = await screen.findByRole("region", {
+      name: "Previous prompts",
+    });
+    for (const promptToDelete of [newerPrompt, olderPrompt]) {
+      await user.click(within(history).getByRole("button", {
+        name: `Delete research: ${promptToDelete}`,
+      }));
+      await user.click(screen.getByRole("button", { name: "Delete research" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: promptToDelete }))
+          .not.toBeInTheDocument();
+      });
+    }
+
+    expect(historyStore.load()).toEqual([]);
+    expect(gsapMocks.timeline).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps the active item visible and reports a persistence deletion failure", async () => {
     const historyStore = new LocalPromptHistoryStore(window.localStorage);
     historyStore.saveCompleted({
@@ -512,6 +635,10 @@ describe("ResearchWorkspace", () => {
     expect(screen.getAllByRole("article")).toHaveLength(3);
     expect(within(history).getByRole("button", { name: report.prompt }))
       .toBeInTheDocument();
+    expect(gsapMocks.set).toHaveBeenLastCalledWith(
+      expect.any(HTMLElement),
+      { clearProps: "all" },
+    );
   });
 
   it("saves a submitted prompt without waiting for the provider response", async () => {
