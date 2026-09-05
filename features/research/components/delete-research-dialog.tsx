@@ -39,9 +39,13 @@ export function DeleteResearchDialog({
     if (!entry) {
       return;
     }
+    const root = document.documentElement;
+    const previousRootOverflow = root.style.overflow;
     const previousOverflow = document.body.style.overflow;
+    root.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     return () => {
+      root.style.overflow = previousRootOverflow;
       document.body.style.overflow = previousOverflow;
     };
   }, [entry]);
@@ -83,7 +87,11 @@ export function DeleteResearchDialog({
         }
       }}
     >
-      <form className="delete-research-dialog__surface" onSubmit={handleSubmit}>
+      <form
+        className="delete-research-dialog__surface"
+        data-lenis-prevent
+        onSubmit={handleSubmit}
+      >
         <header className="delete-research-dialog__header">
           <h2 id="delete-research-title">Delete research?</h2>
           <p id="delete-research-description">

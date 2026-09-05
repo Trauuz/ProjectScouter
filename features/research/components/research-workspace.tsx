@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { ReactLenis } from "lenis/react";
 
 gsap.registerPlugin(useGSAP);
 
@@ -777,7 +778,18 @@ export function ResearchWorkspace({
           )}
         </aside>
 
-        <section className="research-results" aria-label="Research results">
+        <ReactLenis
+          className="research-results"
+          role="region"
+          aria-label="Research results"
+          data-lenis-prevent
+          data-lenis-smooth
+          options={{
+            lerp: 0.1,
+            smoothWheel: true,
+            overscroll: false,
+          }}
+        >
           <div className="research-status" aria-live="polite">
             {state.status === "error" ? (
               <div className="research-status__error" role="alert">
@@ -912,7 +924,7 @@ export function ResearchWorkspace({
               </section>
             </div>
           ) : null}
-        </section>
+        </ReactLenis>
       </div>
       <DeleteResearchDialog
         entry={deleteTarget}

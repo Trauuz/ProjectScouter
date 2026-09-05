@@ -145,8 +145,7 @@ export function TrustStrip() {
           scrollTrigger: { 
             trigger: container.current, 
             start: "top 85%", 
-            end: "bottom top", 
-            toggleActions: "play none play none" 
+            once: true,
           },
           autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out"
         });
@@ -154,8 +153,7 @@ export function TrustStrip() {
           scrollTrigger: { 
             trigger: container.current, 
             start: "top 85%", 
-            end: "bottom top", 
-            toggleActions: "play none play none" 
+            once: true,
           },
           scaleX: 1, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.3
         });
@@ -226,26 +224,26 @@ export function LandingStory() {
         if (reduceMotion) return;
 
         // Animations
-        const evTl = gsap.timeline({ scrollTrigger: { trigger: "#evidence", start: "top 85%", end: "bottom top", toggleActions: "play reset play reset" } });
+        const evTl = gsap.timeline({ scrollTrigger: { trigger: "#evidence", start: "top 85%", once: true } });
         evTl.to(".ev-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
             .to(".ev-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
             .to(".evidence-node", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.3 }, "-=0.2")
             .to(".evidence-line", { scaleX: 1, scaleY: 1, duration: 0.4, stagger: 0.3 }, "-=1.2")
             .to(".evidence-node-inner", { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.3 }, "-=1.1");
 
-        const dirTl = gsap.timeline({ scrollTrigger: { trigger: "#directions", start: "top 85%", end: "bottom top", toggleActions: "play reset play reset" } });
+        const dirTl = gsap.timeline({ scrollTrigger: { trigger: "#directions", start: "top 85%", once: true } });
         dirTl.to(".dir-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
              .to(".dir-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
              .to(".dir-topic", { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(1.2)" }, "-=0.2")
              .to(".dir-svg path", { strokeDashoffset: 0, duration: 0.6, stagger: 0.1, ease: "power2.inOut" })
              .to(".dir-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power2.out" }, "-=0.4");
 
-        const audTl = gsap.timeline({ scrollTrigger: { trigger: "#audience", start: "top 85%", end: "bottom top", toggleActions: "play reset play reset" } });
+        const audTl = gsap.timeline({ scrollTrigger: { trigger: "#audience", start: "top 85%", once: true } });
         audTl.to(".aud-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
              .to(".aud-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
              .to(".aud-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, "-=0.2");
 
-        const transTl = gsap.timeline({ scrollTrigger: { trigger: "#before-after", start: "top 85%", end: "bottom top", toggleActions: "play reset play reset" } });
+        const transTl = gsap.timeline({ scrollTrigger: { trigger: "#before-after", start: "top 85%", once: true } });
         transTl.to(".trans-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
                .to(".trans-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
                .to(".trans-before", { autoAlpha: 1, x: 0, duration: 0.6, ease: "power2.out" }, "-=0.1")
@@ -253,7 +251,7 @@ export function LandingStory() {
                .to(".trans-after", { autoAlpha: 1, x: 0, duration: 0.6, ease: "power2.out" }, "-=0.2")
                .to(".trans-highlight", { backgroundColor: "var(--color-accent-soft)", duration: 0.8, stagger: 0.15 }, "-=0.1");
 
-        const princTl = gsap.timeline({ scrollTrigger: { trigger: "#principles", start: "top 85%", end: "bottom top", toggleActions: "play reset play reset" } });
+        const princTl = gsap.timeline({ scrollTrigger: { trigger: "#principles", start: "top 85%", once: true } });
         princTl.to(".princ-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
                .to(".princ-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
                .to(".princ-item", { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.2, ease: "power2.out" }, "-=0.2");

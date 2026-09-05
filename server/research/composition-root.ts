@@ -8,6 +8,7 @@ import {
 } from "./infrastructure/provider-factory";
 import { readResearchEnvironment } from "./infrastructure/research-environment";
 import { createResearchPostHandler } from "./presentation/create-research-handler";
+import { getMonthlyUsageMeter } from "@/server/usage/drizzle-monthly-usage-meter";
 
 type ResearchPostHandler = ReturnType<typeof createResearchPostHandler>;
 
@@ -33,6 +34,7 @@ export function getResearchPostHandler(): ResearchPostHandler {
       maxRequests: 5,
       windowMs: 10 * 60 * 1_000,
     }),
+    usageMeter: getMonthlyUsageMeter(),
   });
 
   return handler;

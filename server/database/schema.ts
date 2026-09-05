@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -22,6 +23,22 @@ export const scopeEstimateEnum = projectScoutSchema.enum("scope_estimate", [
 export const evidenceStrengthEnum = projectScoutSchema.enum(
   "evidence_strength",
   ["strong", "medium", "weak"],
+);
+
+export const accountMonthlyUsage = projectScoutSchema.table(
+  "account_monthly_usage",
+  {
+    userId: uuid("user_id").notNull(),
+    periodStart: date("period_start", { mode: "string" }).notNull(),
+    usedCredits: integer("used_credits").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.periodStart] })],
 );
 
 export const researchRuns = projectScoutSchema.table(

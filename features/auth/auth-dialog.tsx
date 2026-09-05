@@ -14,27 +14,12 @@ import { AuthSuccessIcon } from "./auth-success-icon";
 
 type FieldErrors = Partial<Record<"email" | "password" | "confirmation", string>>;
 
-const content: Record<AuthMode, { title: string; description: string }> = {
-  login: {
-    title: "Continue your research",
-    description: "Log in to run research and keep each evidence-backed direction attached to your account.",
-  },
-  signup: {
-    title: "Create your account",
-    description: "Sign up free, confirm your email, and ProjectScout will resume this research request.",
-  },
-  "forgot-password": {
-    title: "Reset your password",
-    description: "We’ll send a secure password-reset link to your email address.",
-  },
-  "check-email": {
-    title: "Check your email",
-    description: "Use the secure link we sent to continue. You can close this window while you wait.",
-  },
-  "update-password": {
-    title: "Choose a new password",
-    description: "Use at least 8 characters with a letter, number, and symbol.",
-  },
+const dialogTitles: Record<AuthMode, string> = {
+  login: "Continue your research",
+  signup: "Create your account",
+  "forgot-password": "Reset your password",
+  "check-email": "Check your email",
+  "update-password": "Choose a new password",
 };
 
 function validateFields(
@@ -90,9 +75,13 @@ export function AuthDialog() {
     if (!auth.isOpen) {
       return;
     }
+    const root = document.documentElement;
+    const previousRootOverflow = root.style.overflow;
     const previousOverflow = document.body.style.overflow;
+    root.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     return () => {
+      root.style.overflow = previousRootOverflow;
       document.body.style.overflow = previousOverflow;
     };
   }, [auth.isOpen]);
@@ -125,7 +114,7 @@ export function AuthDialog() {
     }
   }
 
-  const details = content[auth.mode];
+  const dialogTitle = dialogTitles[auth.mode];
   const submitLabel = {
     login: "Log in",
     signup: "Create account",
@@ -137,8 +126,7 @@ export function AuthDialog() {
     <dialog
       className="auth-dialog"
       ref={dialogRef}
-      aria-labelledby="auth-dialog-title"
-      aria-describedby="auth-dialog-description"
+      aria-label={dialogTitle}
       onCancel={(event) => {
         event.preventDefault();
         auth.closeAuth();
@@ -157,7 +145,7 @@ export function AuthDialog() {
         }
       }}
     >
-      <div className="auth-dialog__surface">
+      <div className="auth-dialog__surface" data-lenis-prevent>
         <button
           className="auth-dialog__close"
           type="button"
@@ -166,11 +154,6 @@ export function AuthDialog() {
         >
           <span aria-hidden="true">×</span>
         </button>
-
-        <header className="auth-dialog__header">
-          <h2 id="auth-dialog-title">{details.title}</h2>
-          <p id="auth-dialog-description">{details.description}</p>
-        </header>
 
         {auth.mode === "login" || auth.mode === "signup" ? (
           <div className="auth-dialog__tabs" aria-label="Authentication method">

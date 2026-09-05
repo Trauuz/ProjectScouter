@@ -9,6 +9,7 @@ import type {
   ResearchApiErrorCode,
   ResearchErrorResponse,
 } from "../domain/research-report";
+import type { MonthlyUsageMeter } from "@/server/usage/monthly-usage";
 
 const MAX_BODY_BYTES = 4_096;
 const REQUEST_TIMEOUT_MS = 85_000;
@@ -20,6 +21,7 @@ const RESPONSE_HEADERS = {
 type Dependencies = {
   workflow: ResearchWorkflow;
   rateLimiter: RateLimiter;
+  usageMeter?: Pick<MonthlyUsageMeter, "reserve">;
   diagnostics?: ResearchDiagnostics;
 };
 
@@ -141,6 +143,7 @@ async function readPrompt(request: Request): Promise<ResearchPrompt> {
 export function createResearchPostHandler({
   workflow,
   rateLimiter,
+  usageMeter,
   diagnostics = DEFAULT_DIAGNOSTICS,
 }: Dependencies) {
   return async function POST(
@@ -184,6 +187,17 @@ export function createResearchPostHandler({
 
     try {
       const prompt = await readPrompt(request);
+      if (owner.userId && usageMeter) {
+        const reservation = await usageMeter.reserve(owner.userId);
+        if (!reservation.allowed) {
+          return errorResponse(
+            429,
+            "MONTHLY_USAGE_EXCEEDED",
+            `You have used all ${reservation.usage.limit} research credits for this month.`,
+            false,
+          );
+        }
+      }
       const signal = AbortSignal.any([
         request.signal,
         AbortSignal.timeout(REQUEST_TIMEOUT_MS),

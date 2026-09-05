@@ -241,7 +241,7 @@ export function AuthProvider({
     } finally {
       pendingStore?.clearPending();
       setUser(null);
-      router.refresh();
+      router.replace("/");
     }
   }, [pendingStore, router]);
 

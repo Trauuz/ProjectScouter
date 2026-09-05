@@ -1,14 +1,18 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+import { speedAdjustedInterval } from "@/shared/motion/motion-config";
 
 import styles from "./scroll-guide.module.css";
 import { StepOneVisual, StepTwoVisual, StepThreeVisual } from "./scroll-guide-visuals";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+export const STEP_THREE_SPEED_MULTIPLIER = 2;
 
 const GUIDE_STEPS = [
   {
@@ -25,9 +29,9 @@ const GUIDE_STEPS = [
   },
   {
     panelId: "directions",
-    title: "Compare three project directions",
+    title: "Compare project directions",
     description:
-      "Compare three distinct, realistic project directions instead of one generic recommendation.",
+      "Compare three distinct project directions instead of one generic recommendation.",
   },
 ] as const;
 
@@ -52,6 +56,15 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
   const stage = useRef<HTMLDivElement>(null);
   const activeStepRef = useRef(0);
   const [activeStep, setActiveStep] = useState(0);
+  const step3Loop = useRef<gsap.core.Timeline>(null);
+
+  useEffect(() => {
+    if (activeStep === 2) {
+      step3Loop.current?.play();
+    } else {
+      step3Loop.current?.pause(0);
+    }
+  }, [activeStep]);
 
   useGSAP(
     () => {
@@ -103,8 +116,14 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
             }
           };
           const scrollDistance = () => {
-            const viewportMultiplier = desktop ? 1.6 : 1.3;
-            return `+=${Math.max(window.innerHeight * viewportMultiplier, 800)}`;
+            const viewportMultiplier = speedAdjustedInterval(
+              desktop ? 1.6 : 1.3,
+            );
+            const minimumDistance = speedAdjustedInterval(800);
+            return `+=${Math.max(
+              window.innerHeight * viewportMultiplier,
+              minimumDistance,
+            )}`;
           };
           const pinStart = () => `top ${measureHeaderHeight()}px`;
           const scrollTrigger = {
@@ -113,7 +132,7 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
             end: scrollDistance,
             pin: stage.current,
             pinSpacing: true,
-            scrub: reduceMotion ? true : 0.6,
+            scrub: reduceMotion ? true : speedAdjustedInterval(0.6),
             anticipatePin: 1,
             invalidateOnRefresh: true,
             onUpdate: (self: ScrollTrigger) => updateActiveStep(self.progress),
@@ -131,13 +150,18 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
           gsap.set(".step2-line1, .step2-line2, .step2-line3, .step2-line4", { autoAlpha: 0, strokeDasharray: "4 8" });
           gsap.set(".step3-card1, .step3-card2, .step3-card3", { autoAlpha: 0, y: 16 });
           gsap.set(".step3-line", { strokeDashoffset: 100, strokeDasharray: "100 100" });
-          gsap.set(".step3-glow2", { autoAlpha: 0, transformOrigin: "center" });
 
           if (reduceMotion) {
             const progressProxy = { value: 0 };
             
-            gsap.set(".step1-text, .step1-icon, .step1-bg, .step1-cursor, .step2-center, .step2-center-inner, .step2-card1, .step2-card2, .step2-card3, .step2-card4, .step3-card1, .step3-card2, .step3-card3, .step3-glow2, .step2-line1, .step2-line2, .step2-line3, .step2-line4", { autoAlpha: 1, scale: 1, y: 0 });
+            gsap.set(".step1-text, .step1-icon, .step1-bg, .step1-cursor, .step2-center, .step2-center-inner, .step2-card1, .step2-card2, .step2-card3, .step2-card4, .step3-card1, .step3-card2, .step3-card3, .step2-line1, .step2-line2, .step2-line3, .step2-line4", { autoAlpha: 1, scale: 1, y: 0 });
             gsap.set(".step3-line", { strokeDashoffset: 0 });
+
+            // Static highlight for Card 2 in reduced motion
+            gsap.set(".step3-card2 .s3-glow", { autoAlpha: 0.28 });
+            gsap.set(".step3-card2 .s3-check, .step3-card2 .s3-card-border", { autoAlpha: 1 });
+            gsap.set(".step3-card2 .s3-icon-bg", { fill: "var(--color-accent-soft)" });
+            gsap.set(".step3-card2 .s3-text-strong", { fill: "var(--color-ink)" });
 
             gsap
               .timeline({ scrollTrigger })
@@ -145,7 +169,6 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
             return;
           }
 
-          // Ambient looping animations (independent of scroll)
           gsap.to(".step1-icon", {
             y: -4,
             duration: 1.5,
@@ -177,13 +200,28 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
             ease: "sine.inOut",
           });
 
-          gsap.to(".step3-glow2", {
-            scale: 1.08,
-            duration: 2,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
+          // Step 3 sequence animation
+          const highlightTl = gsap
+            .timeline({ repeat: -1, paused: true })
+            .timeScale(STEP_THREE_SPEED_MULTIPLIER);
+          [1, 2, 3].forEach((id) => {
+            highlightTl
+              .to('.step3-card' + id + ' .s3-glow', { autoAlpha: 1, duration: 0.8, ease: "power2.inOut" })
+              .to('.step3-card' + id + ' .s3-check', { autoAlpha: 1, duration: 0.6 }, "<0.2")
+              .to('.step3-card' + id + ' .s3-card-border', { autoAlpha: 1, duration: 0.6 }, "<")
+              .to('.step3-card' + id + ' .s3-icon-bg', { fill: "var(--color-accent-soft)", duration: 0.6 }, "<")
+              .to('.step3-card' + id + ' .s3-text-strong', { fill: "var(--color-ink)", duration: 0.6 }, "<")
+              .to({}, { duration: 1.8 }) // hold
+              .to('.step3-card' + id + ' .s3-glow', { autoAlpha: 0, duration: 0.8, ease: "power2.inOut" })
+              .to('.step3-card' + id + ' .s3-check, .step3-card' + id + ' .s3-card-border', { autoAlpha: 0, duration: 0.6 }, "<")
+              .to('.step3-card' + id + ' .s3-icon-bg', { fill: "var(--color-workspace-soft)", duration: 0.6 }, "<")
+              .to('.step3-card' + id + ' .s3-text-strong', { fill: "var(--color-ink-soft)", duration: 0.6 }, "<");
           });
+
+          step3Loop.current = highlightTl;
+          if (activeStepRef.current === 2) {
+            step3Loop.current.play();
+          }
 
           const timeline = gsap.timeline({
             defaults: { duration: 0.28, ease: "power2.inOut" },
@@ -214,7 +252,6 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
             .to(".step3-card1", { autoAlpha: 1, y: 0, duration: 0.2 }, "directions+=0.15")
             .to(".step3-card3", { autoAlpha: 1, y: 0, duration: 0.2 }, "directions+=0.2")
             .to(".step3-card2", { autoAlpha: 1, y: 0, duration: 0.2 }, "directions+=0.25")
-            .to(".step3-glow2", { autoAlpha: 1, duration: 0.2 }, "directions+=0.3")
             .to(panels[2], { autoAlpha: 1, duration: 0.72 }, "directions+=0.28");
         },
       );
@@ -296,4 +333,3 @@ export function ScrollGuide({ preview }: ScrollGuideProps) {
     </section>
   );
 }
-

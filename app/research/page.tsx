@@ -29,7 +29,7 @@ export default async function ResearchPage({
 
   return (
     <div className="research-shell">
-      <SiteHeader />
+      <SiteHeader hideNavigationLinks />
       <main className="research-page" id="top">
         <ResearchWorkspace
           initialPrompt={initialPrompt}

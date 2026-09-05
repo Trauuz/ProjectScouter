@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "How ProjectScout collects, uses, stores, and shares information when you use the service.",
 };
 
-const PRIVACY_CONTACT_EMAIL = "privacy@projectscout.example";
+const PRIVACY_CONTACT_EMAIL = "tristancarabbacan06@gmail.com";
 
 const policySections = [
   { id: "information-we-collect", title: "Information We Collect" },

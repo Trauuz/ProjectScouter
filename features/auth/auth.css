@@ -66,30 +66,6 @@
     transform var(--dur-instant) var(--ease-out);
 }
 
-.auth-dialog__header {
-  display: grid;
-  gap: var(--space-md);
-  padding-inline-end: var(--space-xl);
-}
-
-.auth-dialog__header h2 {
-  min-width: 0;
-  font-family: var(--font-display);
-  font-size: clamp(var(--text-xl), 7vw, var(--text-2xl));
-  font-style: normal;
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  overflow-wrap: anywhere;
-}
-
-.auth-dialog__header p {
-  max-width: 42ch;
-  color: var(--color-ink-soft);
-  font-size: var(--text-sm);
-  line-height: 1.55;
-}
-
 .auth-dialog__tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

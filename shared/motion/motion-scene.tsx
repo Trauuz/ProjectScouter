@@ -5,6 +5,8 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+import { speedAdjustedInterval } from "./motion-config";
+
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 export function MotionScene({ children }: { children: ReactNode }) {
@@ -100,7 +102,7 @@ export function MotionScene({ children }: { children: ReactNode }) {
                 trigger: scene.current?.querySelector(".hero") || ".hero",
                 start: "top top",
                 end: "bottom top",
-                scrub: 1,
+                scrub: speedAdjustedInterval(1),
               },
             },
           );

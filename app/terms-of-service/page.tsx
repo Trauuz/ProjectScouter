@@ -12,11 +12,7 @@ export const metadata: Metadata = {
     "The terms that govern access to and use of the ProjectScout research service.",
 };
 
-const LEGAL_CONTACT_EMAIL = "legal@projectscout.example";
-const GOVERNING_LAW_PLACEHOLDER =
-  "[Insert the operating entity’s governing jurisdiction and venue before launch.]";
-const LIABILITY_CAP_PLACEHOLDER =
-  "[Insert the liability cap approved for the operating entity and jurisdiction before launch.]";
+const LEGAL_CONTACT_EMAIL = "tristancarabbacan06@gmail.com";
 
 const termsSections = [
   { id: "acceptance-of-terms", title: "Acceptance of Terms" },
@@ -33,6 +29,7 @@ const termsSections = [
     title: "AI-Generated Content and Research Results",
   },
   { id: "acceptable-use", title: "Acceptable Use" },
+  { id: "philippine-law-compliance", title: "Philippine Law Compliance" },
   { id: "intellectual-property", title: "Intellectual Property" },
   { id: "third-party-services", title: "Third-Party Services" },
   { id: "service-availability", title: "Service Availability" },
@@ -45,7 +42,7 @@ const termsSections = [
     title: "Account Suspension and Termination",
   },
   { id: "changes-to-the-terms", title: "Changes to the Terms" },
-  { id: "governing-law", title: "Governing Law" },
+  { id: "governing-law", title: "Governing Law and Disputes" },
   { id: "contact-information", title: "Contact Information" },
 ] as const;
 
@@ -58,7 +55,7 @@ export default function TermsOfServicePage() {
         <header className={styles.intro}>
           <h1>Terms of Service</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-08-26">August 26, 2026</time>
+            Last updated: <time dateTime="2026-09-06">September 6, 2026</time>
           </p>
           <p className={styles.lede}>
             These Terms explain the rules for using ProjectScout, including your
@@ -318,8 +315,7 @@ export default function TermsOfServicePage() {
               <p>
                 Questions about these Terms can be sent to{" "}
                 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.
-                This is a placeholder contact address and should be replaced with the
-                ProjectScout operator’s official legal address before production launch.
+                This is ProjectScout’s official legal contact address.
               </p>
             </section>
           </article>
