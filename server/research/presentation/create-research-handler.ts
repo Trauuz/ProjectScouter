@@ -188,8 +188,35 @@ export function createResearchPostHandler({
     try {
       const prompt = await readPrompt(request);
       if (owner.userId && usageMeter) {
-        const reservation = await usageMeter.reserve(owner.userId);
+        let reservation;
+        try {
+          reservation = await usageMeter.reserve(owner.userId);
+        } catch (reason) {
+          diagnostics.reportFailure(reason);
+          return errorResponse(
+            503,
+            "USAGE_UNAVAILABLE",
+            "Usage could not be verified. Please try again.",
+            true,
+          );
+        }
         if (!reservation.allowed) {
+          if (reservation.denialReason === "google-ai") {
+            return errorResponse(
+              429,
+              "FREE_TIER_CAPACITY_REACHED",
+              "ProjectScout has reached today’s AI free-tier capacity. Please try again tomorrow.",
+              true,
+            );
+          }
+          if (reservation.denialReason === "tavily") {
+            return errorResponse(
+              429,
+              "FREE_TIER_CAPACITY_REACHED",
+              "ProjectScout has reached this month’s search free-tier capacity.",
+              false,
+            );
+          }
           return errorResponse(
             429,
             "MONTHLY_USAGE_EXCEEDED",

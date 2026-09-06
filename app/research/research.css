@@ -95,7 +95,8 @@ body:has(.research-shell) {
 }
 
 .research-loading__status > span {
-  animation: research-pulse var(--dur-progress) var(--ease-out) infinite alternate;
+  box-shadow: 0 0 0 var(--space-2xs) var(--color-accent-soft);
+  transform-origin: center;
 }
 
 .research-workspace__body {
@@ -466,6 +467,7 @@ body:has(.research-shell) {
 
 .research-page .research-status__error .button {
   flex: 0 0 auto;
+  color: var(--color-ink);
   white-space: nowrap;
   transform-origin: center;
 }
@@ -602,6 +604,50 @@ body:has(.research-shell) {
   gap: var(--space-lg);
 }
 
+.research-loading__scan {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: var(--rule-hairline) solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  box-shadow: 0 var(--space-2xs) var(--space-lg) var(--color-workspace-shadow);
+}
+
+.research-loading__scan-track {
+  height: var(--space-xs);
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background: color-mix(in oklch, var(--color-paper-raised) 72%, transparent);
+}
+
+.research-loading__scan-beam {
+  width: 28%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-accent-dark);
+  box-shadow: 0 0 var(--space-md) var(--color-accent);
+  will-change: transform;
+}
+
+.research-loading__scan-labels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  color: var(--color-accent-dark);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.research-loading__scan-labels span:nth-child(2) {
+  text-align: center;
+}
+
+.research-loading__scan-labels span:last-child {
+  text-align: end;
+}
+
 .research-loading__card {
   display: grid;
   gap: var(--space-lg);
@@ -610,7 +656,7 @@ body:has(.research-shell) {
   border-radius: var(--radius-md);
   background: var(--color-paper-raised);
   box-shadow: 0 var(--space-2xs) var(--space-lg) var(--color-workspace-shadow);
-  animation: research-pulse var(--dur-progress) var(--ease-out) infinite alternate;
+  will-change: transform;
 }
 
 .research-loading__card-header {
@@ -1363,6 +1409,12 @@ body:has(.research-shell) {
   .research-loading__card,
   .research-page .research-report {
     animation: none;
+  }
+
+  .research-loading__scan-beam {
+    width: 100%;
+    opacity: 0.55;
+    transform: none;
   }
 
   .research-page [data-tactile="true"]:active {

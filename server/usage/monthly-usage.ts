@@ -1,4 +1,18 @@
-export const MONTHLY_RESEARCH_LIMIT = 10;
+export const ACCOUNT_MONTHLY_RESEARCH_LIMIT = 10;
+
+// ProjectScout makes one advanced Tavily search (2 credits) and one Gemini
+// generation per research run. Tavily's free plan includes 1,000 credits each
+// month; keeping 100 credits unallocated leaves room for diagnostics and other
+// key usage outside this application.
+export const TAVILY_API_CREDITS_PER_RESEARCH = 2;
+export const TAVILY_MONTHLY_APP_CREDIT_LIMIT = 900;
+
+// Google publishes project-specific free-tier limits in AI Studio rather than a
+// single guaranteed RPD value. This deliberately conservative shared ceiling
+// complements the request burst limiter and can safely serve a small free beta.
+export const GOOGLE_AI_DAILY_RESEARCH_LIMIT = 10;
+
+export type UsageDenialReason = "account" | "google-ai" | "tavily";
 
 export type MonthlyUsage = {
   limit: number;
@@ -11,6 +25,7 @@ export type MonthlyUsage = {
 export type MonthlyUsageReservation = {
   allowed: boolean;
   usage: MonthlyUsage;
+  denialReason?: UsageDenialReason;
 };
 
 export type MonthlyUsageMeter = {
@@ -33,10 +48,24 @@ export function monthlyUsagePeriod(now: Date): {
   };
 }
 
+export function googleDailyUsagePeriod(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 export function monthlyUsage(
   used: number,
   now: Date,
-  limit = MONTHLY_RESEARCH_LIMIT,
+  limit = ACCOUNT_MONTHLY_RESEARCH_LIMIT,
 ): MonthlyUsage {
   const period = monthlyUsagePeriod(now);
   const safeUsed = Math.max(0, Math.trunc(used));

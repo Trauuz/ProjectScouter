@@ -317,8 +317,57 @@ function completedDate(isoDate: string): string {
 }
 
 function ResearchLoading({ prompt }: { prompt: string }) {
+  const loadingRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (reducedMotionRequested()) {
+        return;
+      }
+
+      const cards = gsap.utils.toArray<HTMLElement>(
+        ".research-loading__card",
+      );
+
+      gsap.from(cards, {
+        autoAlpha: 0,
+        y: 18,
+        duration: 0.55,
+        stagger: 0.1,
+        ease: "power3.out",
+      });
+      gsap.to(cards, {
+        y: -6,
+        duration: 0.9,
+        stagger: 0.16,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+      gsap.fromTo(
+        ".research-loading__scan-beam",
+        { xPercent: -110 },
+        {
+          xPercent: 390,
+          duration: 1.45,
+          repeat: -1,
+          repeatDelay: 0.15,
+          ease: "power2.inOut",
+        },
+      );
+      gsap.to(".research-loading__status > span", {
+        scale: 1.55,
+        duration: 0.65,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+    },
+    { scope: loadingRef },
+  );
+
   return (
-    <div className="research-loading" role="status">
+    <div className="research-loading" role="status" ref={loadingRef}>
       <header className="research-loading__header">
         <div className="research-loading__status">
           <span aria-hidden="true" />
@@ -330,6 +379,16 @@ function ResearchLoading({ prompt }: { prompt: string }) {
           project directions.
         </p>
       </header>
+      <div className="research-loading__scan" aria-hidden="true">
+        <div className="research-loading__scan-track">
+          <span className="research-loading__scan-beam" />
+        </div>
+        <div className="research-loading__scan-labels">
+          <span>Scanning sources</span>
+          <span>Comparing evidence</span>
+          <span>Building directions</span>
+        </div>
+      </div>
       <div className="research-loading__skeleton" aria-hidden="true">
         {[1, 2, 3].map((number) => (
           <div className="research-loading__card" key={number}>

@@ -208,7 +208,7 @@ function UsageDialog({
           <h2 id={titleId}>Usage</h2>
         </div>
         <div className="usage-dialog__balance" role="status">
-          <span>Credits remaining</span>
+          <span>Monthly research credits</span>
           <strong>
             {usageError
               ? "Unavailable"
@@ -219,7 +219,7 @@ function UsageDialog({
         </div>
         <p className="usage-dialog__note">
           {usageError || (usage
-            ? `Resets ${resetDateLabel(usage.resetsAt)} at 00:00 UTC.`
+            ? `One credit runs one public-evidence search and one AI comparison. Resets ${resetDateLabel(usage.resetsAt)} at 00:00 UTC.`
             : "Loading this month’s usage.")}
         </p>
         <button className="button usage-dialog__close" type="button" onClick={onClose}>

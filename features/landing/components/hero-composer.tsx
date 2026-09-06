@@ -1,11 +1,24 @@
 "use client";
 
-import type {
+import {
+  useEffect,
+  useState,
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
+import { speedAdjustedInterval } from "@/shared/motion/motion-config";
+
+import {
+  HERO_PLACEHOLDER_DELAY_MS,
+  HERO_PROMPT_EXAMPLES,
+  advanceHeroPlaceholder,
+  heroPlaceholderText,
+  initialHeroPlaceholder,
+} from "./hero-placeholder";
+
 const MAX_COMPOSER_HEIGHT = 224;
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 function resizeComposer(textarea: HTMLTextAreaElement) {
   textarea.style.height = "auto";
@@ -17,6 +30,33 @@ function resizeComposer(textarea: HTMLTextAreaElement) {
 }
 
 export function HeroComposer() {
+  const [placeholder, setPlaceholder] = useState(initialHeroPlaceholder);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+    const updatePreference = () => setReducedMotion(mediaQuery.matches);
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      return;
+    }
+
+    const timer = window.setTimeout(
+      () => setPlaceholder(advanceHeroPlaceholder),
+      speedAdjustedInterval(HERO_PLACEHOLDER_DELAY_MS[placeholder.phase]),
+    );
+    return () => window.clearTimeout(timer);
+  }, [placeholder, reducedMotion]);
+
+  const placeholderText = reducedMotion
+    ? HERO_PROMPT_EXAMPLES[0]
+    : heroPlaceholderText(placeholder);
+
   function handleInput(event: FormEvent<HTMLTextAreaElement>) {
     resizeComposer(event.currentTarget);
   }
@@ -44,7 +84,7 @@ export function HeroComposer() {
         minLength={10}
         maxLength={500}
         required
-        placeholder="What kind of project do you want to explore?"
+        placeholder={placeholderText}
         autoComplete="off"
         data-gramm="false"
         data-gramm_editor="false"

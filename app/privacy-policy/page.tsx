@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SiteFooter } from "@/shared/layout/site-footer";
 import { SiteHeader } from "@/shared/layout/site-header";
+import { PROJECTSCOUT_OPERATOR } from "@/shared/legal/legal-identity";
 
 import styles from "./privacy-policy.module.css";
 
@@ -11,32 +12,15 @@ export const metadata: Metadata = {
     "How ProjectScout collects, uses, stores, and shares information when you use the service.",
 };
 
-const PRIVACY_CONTACT_EMAIL = "tristancarabbacan06@gmail.com";
-
 const policySections = [
-  { id: "information-we-collect", title: "Information We Collect" },
-  { id: "how-we-use-information", title: "How We Use Information" },
-  { id: "account-information", title: "Account Information" },
-  {
-    id: "research-prompts-and-user-content",
-    title: "Research Prompts and User Content",
-  },
-  { id: "how-we-store-information", title: "How We Store Information" },
-  {
-    id: "cookies-and-similar-technologies",
-    title: "Cookies and Similar Technologies",
-  },
-  { id: "third-party-services", title: "Third-Party Services" },
-  { id: "data-sharing", title: "Data Sharing" },
-  { id: "data-security", title: "Data Security" },
-  { id: "data-retention", title: "Data Retention" },
-  { id: "user-rights-and-choices", title: "User Rights and Choices" },
-  { id: "childrens-privacy", title: "Children’s Privacy" },
-  {
-    id: "changes-to-this-privacy-policy",
-    title: "Changes to This Privacy Policy",
-  },
-  { id: "contact-information", title: "Contact Information" },
+  { id: "operator-and-scope", title: "Operator and Scope" },
+  { id: "data-and-purposes", title: "Data and Purposes" },
+  { id: "providers-and-sharing", title: "Providers and Sharing" },
+  { id: "storage-cookies-and-retention", title: "Storage, Cookies, and Retention" },
+  { id: "lawful-bases", title: "Lawful Bases" },
+  { id: "security-and-breaches", title: "Security and Breaches" },
+  { id: "your-rights-and-children", title: "Your Rights and Children" },
+  { id: "changes-and-contact", title: "Changes and Contact" },
 ] as const;
 
 export default function PrivacyPolicyPage() {
@@ -48,12 +32,11 @@ export default function PrivacyPolicyPage() {
         <header className={styles.intro}>
           <h1>Privacy Policy</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-08-25">August 25, 2026</time>
+            Last updated: <time dateTime="2026-09-06">September 6, 2026</time>
           </p>
           <p className={styles.lede}>
-            ProjectScout turns a project prompt into evidence-backed research
-            directions. This policy explains what information the service handles,
-            why it is used, and the choices available to you.
+            This policy explains the personal data ProjectScout handles and your
+            choices.
           </p>
         </header>
 
@@ -63,223 +46,176 @@ export default function PrivacyPolicyPage() {
             <ol>
               {policySections.map((section) => (
                 <li key={section.id}>
-                  <a href={`#${section.id}`}>{section.title}</a>
+                  <a href={"#" + section.id}>{section.title}</a>
                 </li>
               ))}
             </ol>
           </nav>
 
           <article className={styles.policy}>
-            <section id="information-we-collect">
-              <h2>Information We Collect</h2>
+            <section id="operator-and-scope">
+              <h2>Operator and Scope</h2>
               <p>
-                We collect information you provide directly, including your email
-                address, research prompts, and the content you choose to submit. We
-                also create service data such as research results, cited sources,
-                project directions, timestamps, and an identifier used to associate
-                research with your browser session or account.
-              </p>
-              <p>
-                The service may also receive basic technical information needed to
-                deliver and protect the website, such as request metadata, browser
-                type, device information, and IP address. ProjectScout does not ask
-                you to provide sensitive personal information in a research prompt.
+                {PROJECTSCOUT_OPERATOR.name} operates ProjectScout and is the
+                personal information controller for account, usage, and research data
+                handled for the service. This policy follows the Philippine Data
+                Privacy Act of 2012 (Republic Act No. 10173), its implementing rules,
+                and applicable National Privacy Commission issuances.
               </p>
             </section>
 
-            <section id="how-we-use-information">
-              <h2>How We Use Information</h2>
-              <p>We use information to:</p>
-              <ul>
-                <li>create and manage your account;</li>
-                <li>run the research you request and generate project directions;</li>
-                <li>save, restore, and organize your research history;</li>
-                <li>maintain, secure, troubleshoot, and prevent misuse of the service;</li>
-                <li>respond to support or privacy requests; and</li>
-                <li>understand and improve ProjectScout’s reliability and usefulness.</li>
-              </ul>
-            </section>
-
-            <section id="account-information">
-              <h2>Account Information</h2>
-              <p>
-                ProjectScout uses Supabase to provide account registration, login,
-                email confirmation, password recovery, and session management. We
-                receive your account identifier and email address from that service.
-                Your password is submitted to and processed by the authentication
-                provider; ProjectScout does not receive a readable copy of it.
-              </p>
-            </section>
-
-            <section id="research-prompts-and-user-content">
-              <h2>Research Prompts and User Content</h2>
-              <p>
-                Your prompt and relevant research material are sent to the providers
-                needed to perform your request. Those providers may use the prompt to
-                search public sources, summarize evidence, and generate structured
-                recommendations. Research results can include links, excerpts, and
-                summaries derived from public websites.
-              </p>
-              <p>
-                Do not submit passwords, financial account details, health records,
-                confidential business information, or personal information about
-                another person unless you have a lawful reason and permission to do
-                so. You remain responsible for the content you submit and for how you
-                use generated results.
-              </p>
-            </section>
-
-            <section id="how-we-store-information">
-              <h2>How We Store Information</h2>
-              <p>
-                Account-linked research runs, prompts, summaries, sources, and project
-                recommendations are stored in ProjectScout’s database. Your browser
-                also keeps a local copy of recent prompt history and completed results
-                so the workspace can restore them quickly. A pending research request
-                may be held briefly in local browser storage while authentication is
-                completed.
-              </p>
-              <p>
-                Information stored locally remains on the device and browser profile
-                where it was created unless you remove it or clear that browser’s site
-                data.
-              </p>
-            </section>
-
-            <section id="cookies-and-similar-technologies">
-              <h2>Cookies and Similar Technologies</h2>
-              <p>
-                ProjectScout uses necessary cookies and browser storage to maintain
-                authentication, recognize a research session, preserve recent research
-                history, and resume a request after signup or login. The visitor-session
-                cookie is HTTP-only, uses SameSite=Lax, and is configured to expire
-                after one year. A pending authentication request expires after about
-                30 minutes.
-              </p>
-              <p>
-                The current service does not intentionally use advertising cookies or
-                sell browser activity for targeted advertising. You can clear cookies
-                and local storage in your browser, but doing so may sign you out or
-                remove locally saved history.
-              </p>
-            </section>
-
-            <section id="third-party-services">
-              <h2>Third-Party Services</h2>
-              <p>ProjectScout relies on service providers in these categories:</p>
+            <section id="data-and-purposes">
+              <h2>Data and Purposes</h2>
+              <p>ProjectScout processes:</p>
               <ul>
                 <li>
-                  <strong>Authentication:</strong> Supabase.
+                  your email address, account identifier, authentication data, and
+                  session information to create and secure your account;
                 </li>
                 <li>
-                  <strong>Web research:</strong> Perplexity or Tavily, depending on
-                  the service configuration.
+                  research prompts and any information you include in them to perform
+                  your request;
                 </li>
                 <li>
-                  <strong>Recommendation generation:</strong> OpenAI or Google Gemini,
-                  depending on the service configuration.
+                  research summaries, source titles, URLs, snippets, recommendations,
+                  evidence links, timestamps, and status to provide and restore results;
                 </li>
                 <li>
-                  <strong>Infrastructure:</strong> database, hosting, network, and
-                  security providers used to operate ProjectScout.
+                  a user or visitor identifier and credit usage to associate research,
+                  enforce limits, and prevent abuse; and
+                </li>
+                <li>
+                  basic request, device, IP address, and security-log information
+                  processed by infrastructure providers to deliver and protect the
+                  service.
                 </li>
               </ul>
               <p>
-                These providers process information under their own terms and privacy
-                practices. ProjectScout sends them only the information reasonably
-                needed for the requested function.
+                Supabase processes passwords and ProjectScout does not receive a
+                readable copy. Do not put sensitive, confidential, or third-party
+                personal information in a prompt unless it is necessary, lawful, and
+                you are authorized to disclose it.
               </p>
             </section>
 
-            <section id="data-sharing">
-              <h2>Data Sharing</h2>
+            <section id="providers-and-sharing">
+              <h2>Providers and Sharing</h2>
+              <ul>
+                <li>
+                  <strong>Supabase</strong> receives account and authentication data
+                  for signup, login, email confirmation, password recovery, and
+                  sessions.
+                </li>
+                <li>
+                  <strong>Perplexity or Tavily</strong> receives your prompt to
+                  research public sources.
+                </li>
+                <li>
+                  <strong>OpenAI or Google Gemini</strong> receives your prompt,
+                  research summary, and collected public-source evidence to generate
+                  recommendations.
+                </li>
+                <li>
+                  <strong>Database, hosting, network, and security providers</strong>
+                  process stored records, service traffic, configuration, and logs
+                  needed to operate ProjectScout.
+                </li>
+              </ul>
               <p>
-                We do not sell personal information. We may share information with the
-                service providers described above, when you direct us to do so, to
-                comply with law or protect rights and safety, or as part of a merger,
-                financing, acquisition, or transfer of the service. If ownership
-                changes, this policy or a replacement notice will describe how your
-                information is handled.
+                The configured providers may process data outside the Philippines
+                under their own terms and privacy practices. ProjectScout shares only
+                what is needed for these functions, a legal requirement, safety, or a
+                transfer of the service. We do not sell personal information or use it
+                for targeted advertising.
               </p>
             </section>
 
-            <section id="data-security">
-              <h2>Data Security</h2>
+            <section id="storage-cookies-and-retention">
+              <h2>Storage, Cookies, and Retention</h2>
+              <p>
+                ProjectScout stores account-linked prompts, research results, sources,
+                recommendations, timestamps, and monthly usage in its database. Your
+                browser stores up to 20 recent prompts and completed results. A pending
+                authentication request may remain in browser storage for about 30
+                minutes.
+              </p>
+              <p>
+                Necessary authentication cookies maintain your Supabase session. An
+                HTTP-only, SameSite=Lax visitor cookie associates anonymous research
+                with a browser and expires after one year. ProjectScout does not
+                intentionally use advertising cookies or browser fingerprinting.
+              </p>
+              <p>
+                Server records are retained while reasonably needed to provide and
+                protect the service, meet legal obligations, or resolve disputes; the
+                current system has no fixed automatic deletion period. Browser history
+                remains until you remove it or clear site data. Removing an item in the
+                interface deletes the browser copy only. You may request deletion of
+                server data, subject to lawful exceptions.
+              </p>
+            </section>
+
+            <section id="lawful-bases">
+              <h2>Lawful Bases</h2>
+              <p>
+                Depending on the activity, processing is necessary to provide the
+                service or perform our agreement with you, comply with law, protect
+                legitimate interests that do not override your rights, or act on your
+                consent. Sensitive personal information is processed only with specific
+                consent or another basis permitted by Philippine law.
+              </p>
+            </section>
+
+            <section id="security-and-breaches">
+              <h2>Security and Breaches</h2>
               <p>
                 We use reasonable administrative, technical, and organizational
-                safeguards designed to protect information. These include access
-                controls, secure authentication, transport encryption where supported,
-                and separation of service credentials from browser code. No online
-                service can guarantee complete security, so please use a unique password
-                and avoid placing sensitive information in prompts.
+                safeguards, including access controls, Supabase authentication,
+                transport security, and server-side storage of provider and database
+                credentials. No online service can guarantee complete security.
+              </p>
+              <p>
+                We assess suspected personal data breaches, take reasonable steps to
+                contain them, and notify the National Privacy Commission and affected
+                people within the applicable period when Philippine law requires
+                notification.
               </p>
             </section>
 
-            <section id="data-retention">
-              <h2>Data Retention</h2>
+            <section id="your-rights-and-children">
+              <h2>Your Rights and Children</h2>
               <p>
-                We retain account and research information for as long as reasonably
-                needed to provide the service, protect it, meet legal obligations, and
-                resolve disputes. Local prompt history remains until you remove it in
-                ProjectScout or clear the browser’s site data. Removing a local history
-                item does not necessarily delete a server-stored research run.
-              </p>
-              <p>
-                When information is no longer needed, we take reasonable steps to
-                delete or de-identify it. Limited copies may remain temporarily in
-                backups, security records, or logs. You can request deletion using the
-                contact information below.
-              </p>
-            </section>
-
-            <section id="user-rights-and-choices">
-              <h2>User Rights and Choices</h2>
-              <p>
-                Depending on where you live, you may have rights to request access,
-                correction, deletion, restriction, objection, or a portable copy of
-                personal information. You may also have the right to appeal a decision
-                or complain to your local data-protection authority.
-              </p>
-              <p>
-                You can manage browser-stored information through ProjectScout and your
-                browser controls. For account-level access, correction, or deletion,
-                contact us. We may need to verify your identity before completing a
-                request, and some information may be retained where law permits or
-                requires it.
-              </p>
-            </section>
-
-            <section id="childrens-privacy">
-              <h2>Children’s Privacy</h2>
-              <p>
-                ProjectScout is not directed to children under 13, and we do not
-                knowingly collect personal information from them. If you believe a
-                child has provided personal information, contact us so we can review
-                and delete it where appropriate. If local law sets a higher minimum
-                age, use the service only with the authorization required in your
-                location.
-              </p>
-            </section>
-
-            <section id="changes-to-this-privacy-policy">
-              <h2>Changes to This Privacy Policy</h2>
-              <p>
-                We may update this policy as ProjectScout changes. We will post the
-                revised version on this page and change the “Last updated” date. If a
-                change materially affects how we use personal information, we will
-                provide additional notice when appropriate.
-              </p>
-            </section>
-
-            <section id="contact-information">
-              <h2>Contact Information</h2>
-              <p>
-                Questions or privacy requests can be sent to{" "}
-                <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>
-                  {PRIVACY_CONTACT_EMAIL}
+                Under the Data Privacy Act, you may have rights to be informed, object,
+                access, correct, erase or block, obtain portable data, claim damages,
+                and file a complaint. We may verify your identity and may retain
+                information where law permits or requires it. You may also complain to
+                the{" "}
+                <a href="https://privacy.gov.ph/">
+                  National Privacy Commission
                 </a>
-                . This is a placeholder contact address and should be replaced with
-                ProjectScout’s official privacy address before production launch.
+                .
+              </p>
+              <p>
+                ProjectScout is not directed to children under 13 and does not
+                knowingly collect their personal data. Contact us if you believe a
+                child has provided data so we can review and delete it where
+                appropriate.
+              </p>
+            </section>
+
+            <section id="changes-and-contact">
+              <h2>Changes and Contact</h2>
+              <p>
+                We may update this policy by posting a revised version and changing
+                the date above. Additional notice will be provided when appropriate or
+                required by law.
+              </p>
+              <p>
+                For privacy questions, complaints, or requests, email{" "}
+                <a href={"mailto:" + PROJECTSCOUT_OPERATOR.email}>
+                  {PROJECTSCOUT_OPERATOR.email}
+                </a>{" "}
+                with the subject &quot;Privacy Request — ProjectScout.&quot;
               </p>
             </section>
           </article>
