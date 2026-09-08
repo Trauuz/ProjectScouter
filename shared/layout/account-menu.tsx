@@ -10,7 +10,16 @@ const BUG_REPORT_MAX_LENGTH = 2000;
 
 type AccountMenuProps = {
   user: AuthIdentity;
-  onSignOut(): Promise<void> | void;
+  onSignOut(): Promise<SignOutResult>;
+};
+
+type SignOutResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+type AccountMenuPanelProps = AccountMenuProps & {
+  active?: boolean;
+  onRequestClose?(): void;
 };
 
 type MonthlyUsage = {
@@ -252,6 +261,7 @@ function BugReportDialog({
   const backdropPointerDownRef = useRef(false);
   const [description, setDescription] = useState("");
   const trimmedDescription = description.trim();
+  const noticeId = `${textareaId}-notice`;
 
   function closeDialog() {
     setDescription("");
@@ -349,6 +359,7 @@ function BugReportDialog({
             id={textareaId}
             value={description}
             maxLength={BUG_REPORT_MAX_LENGTH}
+            aria-describedby={noticeId}
             placeholder="Tell us what went wrong and what you expected to happen."
             onChange={(event) => setDescription(event.target.value)}
           />
@@ -357,9 +368,10 @@ function BugReportDialog({
           </span>
         </div>
 
-        <p className="bug-report-dialog__note">
-          Your report will open as a pre-filled GitHub issue so you can review
-          it before submitting.
+        <p className="bug-report-dialog__note" id={noticeId}>
+          Continuing sends this description to GitHub to create a draft. It
+          becomes public only if you submit the issue there. Do not include
+          personal, sensitive, or confidential information.
         </p>
 
         <div className="bug-report-dialog__actions">
@@ -367,7 +379,7 @@ function BugReportDialog({
             Cancel
           </button>
           <button className="button" type="submit" disabled={!trimmedDescription}>
-            Continue to GitHub
+            Open GitHub draft
           </button>
         </div>
       </form>
@@ -375,52 +387,67 @@ function BugReportDialog({
   );
 }
 
-export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
-  const detailsRef = useRef<HTMLDetailsElement>(null);
+export function AccountMenuPanel({
+  user,
+  onSignOut,
+  active = true,
+  onRequestClose,
+}: AccountMenuPanelProps) {
   const usageTitleId = useId();
   const bugReportTitleId = useId();
   const bugReportTextareaId = useId();
+  const signOutErrorId = useId();
   const [helpOpen, setHelpOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
+
+  useEffect(() => {
+    if (!active) {
+      setHelpOpen(false);
+    }
+  }, [active]);
 
   function closeMenu() {
-    if (detailsRef.current) {
-      detailsRef.current.open = false;
-    }
     setHelpOpen(false);
+    onRequestClose?.();
   }
 
   function showUsage() {
-    closeMenu();
     setUsageOpen(true);
   }
 
   function showBugReport() {
-    closeMenu();
     setBugReportOpen(true);
   }
 
-  function signOut() {
-    closeMenu();
-    void onSignOut();
+  async function signOut() {
+    if (signOutPending) {
+      return;
+    }
+
+    setSignOutError("");
+    setSignOutPending(true);
+    try {
+      const result = await onSignOut();
+      if (!result.ok) {
+        setSignOutError(result.message);
+        return;
+      }
+      closeMenu();
+    } catch {
+      setSignOutError(
+        "Logout could not be completed. Check your connection and try again.",
+      );
+    } finally {
+      setSignOutPending(false);
+    }
   }
 
   return (
     <>
-      <details
-        className="account-menu"
-        ref={detailsRef}
-        onToggle={(event) => {
-          if (!event.currentTarget.open) {
-            setHelpOpen(false);
-          }
-        }}
-      >
-        <summary aria-label={`Account menu for ${user.email}`}>
-          <span aria-hidden="true">{user.initials}</span>
-        </summary>
-        <div className="account-menu__panel">
+      <div className="account-menu__panel">
           <div className="account-menu__identity">
             <span aria-hidden="true">{user.initials}</span>
             <p>{user.email}</p>
@@ -444,6 +471,14 @@ export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
               <Link className="account-menu__item" href="/privacy-policy" onClick={closeMenu}>
                 <MenuIcon name="privacy" />
                 <span>Privacy Policy</span>
+              </Link>
+              <Link className="account-menu__item" href="/cookie-policy" onClick={closeMenu}>
+                <MenuIcon name="privacy" />
+                <span>Cookie Policy</span>
+              </Link>
+              <Link className="account-menu__item" href="/refund-policy" onClick={closeMenu}>
+                <MenuIcon name="terms" />
+                <span>Refund Policy</span>
               </Link>
               <button
                 className="account-menu__item"
@@ -477,26 +512,71 @@ export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
               <button
                 className="account-menu__item account-menu__logout"
                 type="button"
-                onClick={signOut}
+                disabled={signOutPending}
+                aria-busy={signOutPending}
+                aria-describedby={signOutError ? signOutErrorId : undefined}
+                data-state={
+                  signOutPending ? "loading" : signOutError ? "error" : undefined
+                }
+                onClick={() => void signOut()}
               >
                 <MenuIcon name="logout" />
-                <span>Log out</span>
+                <span>{signOutPending ? "Logging out…" : "Log out"}</span>
               </button>
+              {signOutError ? (
+                <p className="account-menu__error" id={signOutErrorId} role="alert">
+                  {signOutError}
+                </p>
+              ) : null}
             </div>
           )}
-        </div>
-      </details>
+      </div>
       <UsageDialog
         open={usageOpen}
         titleId={usageTitleId}
-        onClose={() => setUsageOpen(false)}
+        onClose={() => {
+          setUsageOpen(false);
+          closeMenu();
+        }}
       />
       <BugReportDialog
         open={bugReportOpen}
         titleId={bugReportTitleId}
         textareaId={bugReportTextareaId}
-        onClose={() => setBugReportOpen(false)}
+        onClose={() => {
+          setBugReportOpen(false);
+          closeMenu();
+        }}
       />
     </>
+  );
+}
+
+export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+
+  function closeMenu() {
+    if (detailsRef.current) {
+      detailsRef.current.open = false;
+    }
+  }
+
+  return (
+    <details
+      className="account-menu"
+      ref={detailsRef}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary aria-label={`Account menu for ${user.email}`}>
+        <span aria-hidden="true">{user.initials}</span>
+      </summary>
+      <AccountMenuPanel
+        user={user}
+        onSignOut={onSignOut}
+        active={open}
+        onRequestClose={closeMenu}
+      />
+    </details>
   );
 }

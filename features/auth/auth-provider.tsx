@@ -7,12 +7,14 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { createAuthIdentity, type AuthIdentity } from "@/shared/auth/auth-identity";
 
 import { AuthContext, type AuthActionResult, type AuthMode } from "./auth-context";
+import { consumeAuthCallback } from "./auth-callback";
 import { AuthDialog } from "./auth-dialog";
 import { reportAuthFailure, toAuthFailure } from "./auth-errors";
 import {
   createPendingAuthIntentStore,
   type NewPendingAuthIntent,
 } from "./pending-auth-intent-store";
+import { completeSignOut } from "./sign-out";
 import { getSupabaseBrowserClient } from "./supabase-browser-client";
 
 function identityFromUser(
@@ -76,17 +78,29 @@ export function AuthProvider({
       return;
     }
 
-    const query = new URLSearchParams(window.location.search);
+    const callback = consumeAuthCallback(
+      window.location.pathname,
+      new URLSearchParams(window.location.search),
+    );
     const queryTimer = window.setTimeout(() => {
-      if (query.get("auth") === "update-password") {
+      if (!callback) {
+        return;
+      }
+
+      window.history.replaceState(window.history.state, "", callback.cleanUrl);
+      if (callback.state === "update-password") {
         recoveryModeRef.current = true;
         setMode("update-password");
         setIsOpen(true);
-      } else if (query.get("auth") === "confirmation-error") {
+      } else if (callback.state === "confirmation-error") {
         setNoticeMessage(
           "That email link is invalid or has expired. Request a new link and try again.",
         );
         setMode("login");
+        setIsOpen(true);
+      } else if (callback.state === "email-confirmed") {
+        setNoticeMessage("");
+        setMode("email-confirmed");
         setIsOpen(true);
       }
     }, 0);
@@ -235,14 +249,17 @@ export function AuthProvider({
     }
   }, [resumePendingIntent, router]);
 
-  const signOut = useCallback(async () => {
-    try {
-      await getSupabaseBrowserClient().auth.signOut();
-    } finally {
-      pendingStore?.clearPending();
-      setUser(null);
-      router.replace("/");
-    }
+  const signOut = useCallback(() => {
+    return completeSignOut({
+      revoke: (options) => getSupabaseBrowserClient().auth.signOut(options),
+      onRevoked: () => {
+        pendingStore?.clearPending();
+        setUser(null);
+        router.replace("/");
+        router.refresh();
+      },
+      onFailure: (reason) => reportAuthFailure("logout", reason),
+    });
   }, [pendingStore, router]);
 
   return (

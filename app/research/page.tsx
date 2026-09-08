@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-import { ResearchWorkspace } from "@/features/research";
-import { SiteHeader } from "@/shared/layout/site-header";
+import { ResearchShell } from "@/features/research";
 
 import "./research.css";
 
@@ -28,14 +27,9 @@ export default async function ResearchPage({
     : query.resume || "";
 
   return (
-    <div className="research-shell">
-      <SiteHeader hideNavigationLinks />
-      <main className="research-page" id="top">
-        <ResearchWorkspace
-          initialPrompt={initialPrompt}
-          resumeIntentId={resumeIntentId}
-        />
-      </main>
-    </div>
+    <ResearchShell
+      initialPrompt={initialPrompt}
+      resumeIntentId={resumeIntentId}
+    />
   );
 }

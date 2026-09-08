@@ -66,6 +66,22 @@ figure {
   white-space: nowrap;
 }
 
+.skip-link {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-paper-raised);
+  color: var(--color-ink);
+  z-index: 999;
+  transform: translateY(-100%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 ::selection {
   background: var(--color-accent-soft);
   color: var(--color-ink);
@@ -322,6 +338,13 @@ figure {
 
 .account-menu__item[data-state="success"] {
   color: var(--color-success);
+}
+
+.account-menu__error {
+  margin: var(--space-2xs) var(--space-sm) 0;
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  line-height: 1.45;
 }
 .usage-dialog {
   position: fixed;
@@ -1219,17 +1242,6 @@ figure {
  * Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5
  * states: default · hover · focus · active · disabled · loading · error · success
  */
-.research-page,
-.research-page + .site-footer {
-  width: min(100%, var(--content-max));
-  margin-inline: auto;
-  padding-inline: var(--page-gutter);
-}
-
-.research-page {
-  min-height: 75dvh;
-  padding-block: clamp(var(--space-2xl), 7vw, var(--space-4xl));
-}
 
 .research-intro {
   display: grid;
@@ -1682,6 +1694,29 @@ figure {
   .source-index__header {
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.7fr);
     align-items: end;
+  }
+}
+
+.hero-composer__privacy {
+  display: none;
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  width: 100%;
+  padding-block-start: var(--space-xs);
+  padding-block-end: max(var(--space-xs), env(safe-area-inset-bottom));
+  padding-inline: var(--page-gutter);
+  background: var(--color-paper-raised);
+  border-block-start: var(--rule-hairline) solid var(--color-rule);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  z-index: 50;
+}
+
+@media (min-width: 48rem) {
+  .hero-composer__privacy {
+    display: block;
   }
 }
 

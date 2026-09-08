@@ -11,13 +11,14 @@ import {
 } from "./monthly-usage";
 
 describe("research usage policy", () => {
-  it("gives each account ten research runs per calendar month", () => {
+  it("gives each account five research runs per calendar month", () => {
     const usage = monthlyUsage(3, new Date("2026-09-06T12:00:00.000Z"));
 
+    expect(ACCOUNT_MONTHLY_RESEARCH_LIMIT).toBe(5);
     expect(usage).toMatchObject({
       limit: ACCOUNT_MONTHLY_RESEARCH_LIMIT,
       used: 3,
-      remaining: 7,
+      remaining: 2,
       periodStart: "2026-09-01",
       resetsAt: "2026-10-01T00:00:00.000Z",
     });

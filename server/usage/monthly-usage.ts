@@ -1,4 +1,4 @@
-export const ACCOUNT_MONTHLY_RESEARCH_LIMIT = 10;
+export const ACCOUNT_MONTHLY_RESEARCH_LIMIT = 5;
 
 // ProjectScout makes one advanced Tavily search (2 credits) and one Gemini
 // generation per research run. Tavily's free plan includes 1,000 credits each

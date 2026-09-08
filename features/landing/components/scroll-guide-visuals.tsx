@@ -2,7 +2,7 @@ import React from "react";
 
 export function StepOneVisual() {
   return (
-    <svg width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <svg aria-hidden="true" focusable="false" width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <defs>
         <radialGradient id="step-one-glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.16" />
@@ -32,7 +32,7 @@ export function StepOneVisual() {
 
 export function StepTwoVisual() {
   return (
-    <svg width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <svg aria-hidden="true" focusable="false" width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <circle cx="250" cy="200" r="150" fill="var(--color-accent-dark)" opacity="0.03" filter="blur(60px)" />
       <path d="M250 200 L120 120" stroke="var(--color-rule)" strokeWidth="2" strokeDasharray="4 4" className="step2-line1" />
       <path d="M250 200 L380 120" stroke="var(--color-rule)" strokeWidth="2" strokeDasharray="4 4" className="step2-line2" />
@@ -76,7 +76,7 @@ export function StepThreeVisual() {
   ];
 
   return (
-    <svg width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <svg aria-hidden="true" focusable="false" width="100%" height="100%" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <circle cx="250" cy="200" r="150" fill="var(--color-accent-soft)" opacity="0.05" filter="blur(60px)" />
       <path d="M250 80 L250 110" stroke="var(--color-rule)" strokeWidth="2" className="step3-line" />
       <path d="M110 110 L390 110" stroke="var(--color-rule)" strokeWidth="2" className="step3-line" />

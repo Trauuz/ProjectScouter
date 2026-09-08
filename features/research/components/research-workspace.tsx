@@ -6,9 +6,11 @@ import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -18,6 +20,7 @@ gsap.registerPlugin(useGSAP);
 
 import { useAuth } from "@/features/auth";
 import { createPendingAuthIntentStore } from "@/features/auth/pending-auth-intent-store";
+import { AccountMenuPanel } from "@/shared/layout/account-menu";
 
 import type {
   ProjectRecommendation,
@@ -31,6 +34,8 @@ import { usePromptHistory } from "../prompt-history/use-prompt-history";
 import type { PromptHistoryEntry } from "../prompt-history/prompt-history-store";
 import { DeleteResearchDialog } from "./delete-research-dialog";
 import { PromptHistory, type PromptHistoryHandle } from "./prompt-history";
+import { researchComposerLayout } from "./research-composer-layout";
+import { researchSubmitLabel } from "./research-submit-label";
 
 type ResearchState =
   | { status: "idle" }
@@ -45,10 +50,49 @@ type ResearchState =
 type ResearchWorkspaceProps = {
   initialPrompt: string;
   resumeIntentId?: string;
+  mobileSidebarOpen?: boolean;
+  onCloseMobileSidebar?(): void;
 };
 
 const TACTILE_TARGET_SELECTOR =
   '[data-tactile="true"], .research-history__list button';
+
+function numericStyle(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resizeResearchComposer(textarea: HTMLTextAreaElement): boolean {
+  textarea.style.height = "auto";
+  textarea.style.minHeight = "0";
+  textarea.style.gridColumn = "auto";
+
+  const styles = window.getComputedStyle(textarea);
+  const lineHeight = numericStyle(styles.lineHeight);
+  const paddingBlockSize =
+    numericStyle(styles.paddingBlockStart) +
+    numericStyle(styles.paddingBlockEnd);
+  const borderBlockSize =
+    numericStyle(styles.borderBlockStartWidth) +
+    numericStyle(styles.borderBlockEndWidth);
+  const compactLayout = researchComposerLayout(
+    textarea.scrollHeight,
+    Math.ceil(lineHeight + paddingBlockSize),
+    borderBlockSize,
+  );
+
+  textarea.style.gridColumn = "";
+  textarea.style.height = "auto";
+  const visibleLayout = researchComposerLayout(
+    textarea.scrollHeight,
+    Math.ceil(lineHeight + paddingBlockSize),
+    borderBlockSize,
+  );
+  textarea.style.minHeight = "";
+  textarea.style.height = `${visibleLayout.height}px`;
+  textarea.style.overflowY = "hidden";
+  return compactLayout.multiline;
+}
 
 class UnexpectedResearchResponse extends Error {
   readonly category = "unexpected_response";
@@ -444,6 +488,8 @@ function ResearchIdle() {
 export function ResearchWorkspace({
   initialPrompt,
   resumeIntentId = "",
+  mobileSidebarOpen = false,
+  onCloseMobileSidebar,
 }: ResearchWorkspaceProps) {
   const auth = useAuth();
   const router = useRouter();
@@ -454,6 +500,7 @@ export function ResearchWorkspace({
   const [deleteTarget, setDeleteTarget] = useState<PromptHistoryEntry | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [composerMultiline, setComposerMultiline] = useState(false);
   const {
     entries: promptHistory,
     rememberPrompt,
@@ -462,12 +509,89 @@ export function ResearchWorkspace({
     findCompletedResearch,
   } = usePromptHistory();
   const controllerRef = useRef<AbortController | null>(null);
+  const researchPromptRef = useRef<HTMLTextAreaElement>(null);
   const promptHistoryRef = useRef<PromptHistoryHandle>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const mobileSidebarRef = useRef<HTMLElement>(null);
+  const mobileSidebarCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileSidebarReturnFocusRef = useRef<HTMLElement | null>(null);
   const autoStartedRef = useRef(false);
   const resumeStartedRef = useRef<string | null>(null);
   const directGateOpenedRef = useRef(false);
   const { contextSafe } = useGSAP({ scope: workspaceRef });
+
+  useLayoutEffect(() => {
+    const textarea = researchPromptRef.current;
+    if (!textarea) {
+      return;
+    }
+    setComposerMultiline(resizeResearchComposer(textarea));
+  }, [prompt]);
+
+  useEffect(() => {
+    function resizeForViewport() {
+      const textarea = researchPromptRef.current;
+      if (!textarea) {
+        return;
+      }
+      setComposerMultiline(resizeResearchComposer(textarea));
+    }
+
+    window.addEventListener("resize", resizeForViewport);
+    return () => window.removeEventListener("resize", resizeForViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) {
+      return;
+    }
+
+    mobileSidebarReturnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const focusFrame = window.requestAnimationFrame(() => {
+      mobileSidebarCloseRef.current?.focus();
+    });
+
+    function handleSidebarKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseMobileSidebar?.();
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = Array.from(
+        mobileSidebarRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) {
+        return;
+      }
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleSidebarKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleSidebarKeyDown);
+      mobileSidebarReturnFocusRef.current?.focus();
+      mobileSidebarReturnFocusRef.current = null;
+    };
+  }, [mobileSidebarOpen, onCloseMobileSidebar]);
 
   const handleTactilePointerDown = contextSafe(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -703,6 +827,11 @@ export function ResearchWorkspace({
     });
   }
 
+  function selectSavedSession(id: string) {
+    restoreSavedSession(id);
+    onCloseMobileSidebar?.();
+  }
+
   function requestResearchDeletion(id: string) {
     if (deleting) {
       return;
@@ -744,7 +873,7 @@ export function ResearchWorkspace({
       setDeleteTarget(null);
     } catch {
       promptHistoryRef.current?.restoreDeletion(deletedId);
-      setDeleteError("Research could not be deleted. Please try again.");
+      setDeleteError("The local copy could not be removed. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -754,6 +883,7 @@ export function ResearchWorkspace({
   const activeEntry = promptHistory.find(
     (entry) => entry.id === activeResearchId,
   ) ?? null;
+  const submitLabel = researchSubmitLabel(state.status);
 
   return (
     <div
@@ -773,17 +903,23 @@ export function ResearchWorkspace({
             <p>Shape the question that guides the research.</p>
           </div>
 
-          <form className="research-form" onSubmit={handleSubmit}>
+          <form
+            className="research-form"
+            data-multiline={composerMultiline || undefined}
+            onSubmit={handleSubmit}
+          >
             <label htmlFor="research-prompt">Research prompt</label>
             <textarea
+              ref={researchPromptRef}
               id="research-prompt"
               name="prompt"
               value={prompt}
               minLength={10}
               maxLength={500}
-              rows={5}
+              rows={1}
               required
               disabled={!auth.user || state.status === "loading"}
+              autoComplete="off"
               aria-describedby="research-prompt-hint"
               aria-invalid={state.status === "error" && !state.retryable}
               onChange={(event) => setPrompt(event.currentTarget.value)}
@@ -791,50 +927,107 @@ export function ResearchWorkspace({
             />
             <p className="research-form__hint" id="research-prompt-hint">
               Public sources only · 10–500 characters · Enter to run ·
-              Shift+Enter for a new line
+              Shift+Enter for a new line. Do not include personal, sensitive, or
+              confidential information; prompts are sent to research and AI
+              providers. <Link href="/privacy-policy">Privacy details</Link>
             </p>
             <button
               className="button research-form__submit"
               data-tactile="true"
               type="submit"
+              aria-label={submitLabel}
               disabled={!auth.user || state.status === "loading"}
             >
-              {state.status === "loading"
-                ? "Researching…"
-                : state.status === "success"
-                  ? "Run new research"
-                  : "Run research"}
+              <span className="research-form__submit-text">{submitLabel}</span>
+              <span className="research-form__submit-icon" aria-hidden="true">
+                {"\u2197"}
+              </span>
             </button>
           </form>
 
-          {promptHistory.length > 0 ? (
-            <PromptHistory
-              ref={promptHistoryRef}
-              entries={promptHistory}
-              activeId={activeResearchId}
-              deletingId={deleting ? deleteTarget?.id ?? null : null}
-              onDelete={requestResearchDeletion}
-              onSelect={restoreSavedSession}
+          <div
+            className="research-mobile-sidebar-layer"
+            data-open={mobileSidebarOpen || undefined}
+          >
+            <button
+              className="research-mobile-sidebar__scrim"
+              type="button"
+              aria-label="Close research navigation"
+              tabIndex={mobileSidebarOpen ? 0 : -1}
+              onClick={onCloseMobileSidebar}
             />
-          ) : (
-            <div className="research-request__method">
-              <h3>What this run includes</h3>
-              <ol>
-                <li>
-                  <span>1</span>
-                  <p>Search current products and user feedback</p>
-                </li>
-                <li>
-                  <span>2</span>
-                  <p>Compare problems, gaps, and existing approaches</p>
-                </li>
-                <li>
-                  <span>3</span>
-                  <p>Prepare three evidence-backed project briefs</p>
-                </li>
-              </ol>
-            </div>
-          )}
+            <section
+              className="research-mobile-sidebar"
+              id="research-mobile-sidebar"
+              ref={mobileSidebarRef}
+              role={mobileSidebarOpen ? "dialog" : undefined}
+              aria-modal={mobileSidebarOpen || undefined}
+              aria-label="Research navigation"
+            >
+              <header className="research-mobile-sidebar__header">
+                <div>
+                  <h2>Research workspace</h2>
+                </div>
+                <button
+                  className="research-mobile-sidebar__close"
+                  ref={mobileSidebarCloseRef}
+                  type="button"
+                  aria-label="Close research navigation"
+                  onClick={onCloseMobileSidebar}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </header>
+
+              <div className="research-mobile-sidebar__scroll" data-lenis-prevent>
+                <div className="research-mobile-sidebar__history">
+                  {promptHistory.length > 0 ? (
+                    <PromptHistory
+                      ref={promptHistoryRef}
+                      entries={promptHistory}
+                      activeId={activeResearchId}
+                      deletingId={deleting ? deleteTarget?.id ?? null : null}
+                      onDelete={requestResearchDeletion}
+                      onSelect={selectSavedSession}
+                    />
+                  ) : (
+                    <div className="research-request__method">
+                      <h3>What this run includes</h3>
+                      <ol>
+                        <li>
+                          <span>1</span>
+                          <p>Search current products and user feedback</p>
+                        </li>
+                        <li>
+                          <span>2</span>
+                          <p>Compare problems, gaps, and existing approaches</p>
+                        </li>
+                        <li>
+                          <span>3</span>
+                          <p>Prepare three evidence-backed project briefs</p>
+                        </li>
+                      </ol>
+                    </div>
+                  )}
+                </div>
+
+                {auth.user ? (
+                  <section
+                    className="research-mobile-sidebar__account"
+                    aria-labelledby="research-mobile-account-title"
+                  >
+                    <h3 id="research-mobile-account-title">Account</h3>
+                    <AccountMenuPanel
+                      user={auth.user}
+                      onSignOut={auth.signOut}
+                      active={mobileSidebarOpen}
+                      onRequestClose={onCloseMobileSidebar}
+                    />
+                  </section>
+                ) : null}
+              </div>
+            </section>
+          </div>
         </aside>
 
         <ReactLenis
@@ -851,7 +1044,7 @@ export function ResearchWorkspace({
         >
           <div className="research-status" aria-live="polite">
             {state.status === "error" ? (
-              <div className="research-status__error" role="alert">
+              <div className="research-status__error">
                 <div>
                   <span>Research stopped</span>
                   <p>{state.message}</p>
@@ -902,7 +1095,7 @@ export function ResearchWorkspace({
                       className="research-report__remove"
                       data-tactile="true"
                       type="button"
-                      aria-label="Remove research from history"
+                      aria-label="Remove research from this browser"
                       onClick={() => requestResearchDeletion(activeEntry.id)}
                     >
                       <svg

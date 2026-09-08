@@ -8,7 +8,7 @@ export function SiteFooter() {
       <div className="site-footer__mast">
         <p className="site-footer__wordmark">ProjectScout</p>
         <p className="site-footer__tagline">
-          Better project ideas begin with better evidence.
+          Project ideas shaped by public-source research.
         </p>
       </div>
       <div className="site-footer__meta">
@@ -16,7 +16,13 @@ export function SiteFooter() {
           <Link href="/">Home</Link>
           <Link href="/research">Start research</Link>
         </nav>
-        <LegalLinks className="site-footer__legal" />
+        <div className="site-footer__legal-block">
+          <LegalLinks
+            className="site-footer__legal"
+            keys={["privacy", "cookies", "terms", "refunds"]}
+          />
+          <small>© {new Date().getUTCFullYear()} ProjectScout</small>
+        </div>
       </div>
     </footer>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 
 import { useAuth } from "@/features/auth";
 
@@ -15,6 +15,7 @@ const navigation = [
 
 type SiteHeaderProps = {
   hideNavigationLinks?: boolean;
+  mobileMenuControl?: ReactNode;
 };
 
 function WordmarkContent() {
@@ -29,7 +30,10 @@ function WordmarkContent() {
   );
 }
 
-export function SiteHeader({ hideNavigationLinks = false }: SiteHeaderProps) {
+export function SiteHeader({
+  hideNavigationLinks = false,
+  mobileMenuControl,
+}: SiteHeaderProps) {
   const auth = useAuth();
   const mobileNavigation = useRef<HTMLDetailsElement>(null);
 
@@ -82,22 +86,26 @@ export function SiteHeader({ hideNavigationLinks = false }: SiteHeaderProps) {
         {auth.user ? accountMenu : unauthenticatedActions}
       </div>
 
-      <details className="mobile-nav" ref={mobileNavigation}>
-        <summary>Menu</summary>
-        <nav aria-label="Mobile navigation">
-          {!hideNavigationLinks &&
-            navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMobileNavigation}
-              >
-                {item.label}
-              </Link>
-            ))}
-          {auth.user ? accountMenu : unauthenticatedActions}
-        </nav>
-      </details>
+      {mobileMenuControl ? (
+        <div className="site-header__mobile-control">{mobileMenuControl}</div>
+      ) : (
+        <details className="mobile-nav" ref={mobileNavigation}>
+          <summary>Menu</summary>
+          <nav aria-label="Mobile navigation">
+            {!hideNavigationLinks &&
+              navigation.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMobileNavigation}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            {auth.user ? accountMenu : unauthenticatedActions}
+          </nav>
+        </details>
+      )}
     </header>
   );
 }

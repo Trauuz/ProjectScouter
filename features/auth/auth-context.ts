@@ -11,6 +11,7 @@ export type AuthMode =
   | "signup"
   | "forgot-password"
   | "check-email"
+  | "email-confirmed"
   | "update-password";
 
 export type AuthActionResult =
@@ -34,7 +35,7 @@ export type AuthContextValue = {
   signUp: (email: string, password: string) => Promise<AuthActionResult>;
   sendPasswordReset: (email: string) => Promise<AuthActionResult>;
   updatePassword: (password: string) => Promise<AuthActionResult>;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<AuthActionResult>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

@@ -45,6 +45,7 @@ export default async function RootLayout({
       className={`${newsreader.variable} ${ibmPlexSans.variable}`}
     >
       <body suppressHydrationWarning>
+        <a href="#top" className="skip-link">Skip to main content</a>
         <SmoothScroll><AuthProvider initialUser={initialUser}>{children}</AuthProvider></SmoothScroll>
       </body>
     </html>

@@ -243,6 +243,18 @@
   overflow-wrap: anywhere;
 }
 
+.auth-dialog__confirmation-copy {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.auth-dialog__confirmation-copy h2 {
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-xl), 6vw, var(--text-2xl));
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
 .auth-dialog__confirmation strong {
   color: var(--color-ink);
 }

@@ -7,6 +7,9 @@ import type {
   ResearchBundle,
 } from "../domain/research-report";
 
+export const TAVILY_RESEARCH_QUERY_GUIDANCE =
+  "Use aggregate product and complaint patterns. Do not collect names, usernames, profile links, contact details, images, or attributable quotes from individuals.";
+
 type TavilySearchResult = {
   title?: unknown;
   url?: unknown;
@@ -130,6 +133,7 @@ export class TavilyResearchProvider implements ResearchProvider {
         body: JSON.stringify({
           query: [
             "existing apps websites product reviews user complaints gaps",
+            TAVILY_RESEARCH_QUERY_GUIDANCE,
             prompt.toString(),
           ].join(" "),
           search_depth: "advanced",

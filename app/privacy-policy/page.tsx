@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { SiteFooter } from "@/shared/layout/site-footer";
 import { SiteHeader } from "@/shared/layout/site-header";
@@ -32,7 +33,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.intro}>
           <h1>Privacy Policy</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-09-06">September 6, 2026</time>
+            Last updated: <time dateTime="2026-09-08">September 8, 2026</time>
           </p>
           <p className={styles.lede}>
             This policy explains the personal data ProjectScout handles and your
@@ -91,6 +92,12 @@ export default function PrivacyPolicyPage() {
                 </li>
               </ul>
               <p>
+                ProjectScout does not ask for your name, postal address, phone
+                number, contacts, precise location, or payment details. A hosting or
+                security provider may still process an IP address and basic request
+                metadata as needed to operate and protect the service.
+              </p>
+              <p>
                 Supabase processes passwords and ProjectScout does not receive a
                 readable copy. Do not put sensitive, confidential, or third-party
                 personal information in a prompt unless it is necessary, lawful, and
@@ -108,7 +115,9 @@ export default function PrivacyPolicyPage() {
                 </li>
                 <li>
                   <strong>Perplexity or Tavily</strong> receives your prompt to
-                  research public sources.
+                  research public sources. ProjectScout asks these providers to use
+                  aggregate patterns and avoid collecting identifiable details about
+                  individuals.
                 </li>
                 <li>
                   <strong>OpenAI or Google Gemini</strong> receives your prompt,
@@ -119,6 +128,11 @@ export default function PrivacyPolicyPage() {
                   <strong>Database, hosting, network, and security providers</strong>
                   process stored records, service traffic, configuration, and logs
                   needed to operate ProjectScout.
+                </li>
+                <li>
+                  <strong>GitHub</strong> receives a bug report only if you choose to
+                  continue to GitHub, review the pre-filled public issue, and submit
+                  it there. Do not include personal or confidential information.
                 </li>
               </ul>
               <p>
@@ -140,10 +154,11 @@ export default function PrivacyPolicyPage() {
                 minutes.
               </p>
               <p>
-                Necessary authentication cookies maintain your Supabase session. An
-                HTTP-only, SameSite=Lax visitor cookie associates anonymous research
-                with a browser and expires after one year. ProjectScout does not
-                intentionally use advertising cookies or browser fingerprinting.
+                Necessary authentication cookies maintain your Supabase session.
+                ProjectScout does not currently use optional analytics storage,
+                advertising cookies, browser fingerprinting, or third-party embeds.
+                The <Link href="/cookie-policy">Cookie Policy</Link> lists the current
+                cookies and browser storage in more detail.
               </p>
               <p>
                 Server records are retained while reasonably needed to provide and
@@ -153,6 +168,12 @@ export default function PrivacyPolicyPage() {
                 interface deletes the browser copy only. You may request deletion of
                 server data, subject to lawful exceptions.
               </p>
+              <p>
+                ProjectScout limits local history to 20 entries and limits prompts to
+                500 characters. We periodically review the information collected and
+                aim not to retain fields that are unnecessary for account security,
+                research delivery, saved history, usage limits, or legal obligations.
+              </p>
             </section>
 
             <section id="lawful-bases">
@@ -161,8 +182,10 @@ export default function PrivacyPolicyPage() {
                 Depending on the activity, processing is necessary to provide the
                 service or perform our agreement with you, comply with law, protect
                 legitimate interests that do not override your rights, or act on your
-                consent. Sensitive personal information is processed only with specific
-                consent or another basis permitted by Philippine law.
+                consent. Creating an account does not make consent the legal basis for
+                every necessary processing activity. Sensitive personal information is
+                processed only with specific consent or another basis permitted by
+                Philippine law.
               </p>
             </section>
 

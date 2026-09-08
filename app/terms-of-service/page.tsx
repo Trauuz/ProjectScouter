@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 const termsSections = [
   { id: "agreement-and-eligibility", title: "Agreement and Eligibility" },
   { id: "service-and-limits", title: "Service and Limits" },
+  { id: "payments-and-refunds", title: "Payments and Refunds" },
   { id: "accounts-and-content", title: "Accounts and Content" },
   { id: "acceptable-use", title: "Acceptable Use" },
   { id: "ai-results", title: "AI Results" },
@@ -34,7 +35,7 @@ export default function TermsOfServicePage() {
         <header className={styles.intro}>
           <h1>Terms of Service</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-09-06">September 6, 2026</time>
+            Last updated: <time dateTime="2026-09-08">September 8, 2026</time>
           </p>
           <p className={styles.lede}>
             These Terms govern your use of ProjectScout.
@@ -60,7 +61,8 @@ export default function TermsOfServicePage() {
                 These Terms are an agreement between you and{" "}
                 {PROJECTSCOUT_OPERATOR.name}, the operator of ProjectScout. By
                 creating an account or using ProjectScout, you agree to these Terms
-                and the <Link href="/privacy-policy">Privacy Policy</Link>. If you
+                and acknowledge the <Link href="/privacy-policy">Privacy Policy</Link>
+                {" "}and <Link href="/cookie-policy">Cookie Policy</Link>. If you
                 use the service for an organization, you confirm that you can accept
                 these Terms for it.
               </p>
@@ -85,6 +87,18 @@ export default function TermsOfServicePage() {
                 maintenance, security controls, or technical failures may affect
                 availability. We may change free limits or add paid features; any
                 price and payment terms will be shown before a charge is made.
+              </p>
+            </section>
+
+            <section id="payments-and-refunds">
+              <h2>Payments and Refunds</h2>
+              <p>
+                ProjectScout does not currently accept payments. There are no paid
+                subscriptions or credit purchases to cancel or refund. If paid
+                features are introduced, their complete terms will be presented
+                before a charge and the <Link href="/refund-policy">Refund Policy</Link>
+                {" "}will be updated. Mandatory consumer remedies remain available
+                where applicable.
               </p>
             </section>
 

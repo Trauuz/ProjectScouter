@@ -220,7 +220,7 @@
   border-radius: var(--radius-md);
   background: var(--color-paper);
   box-shadow: 0 var(--space-xs) var(--space-md) var(--color-workspace-shadow);
-  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
 }
 
 .directionCard:hover {
@@ -277,7 +277,7 @@
   border: var(--rule-hairline) solid var(--color-rule);
   border-radius: var(--radius-md);
   background: var(--color-paper-raised);
-  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
 }
 
 .audienceCard:hover {
@@ -320,6 +320,8 @@
 }
 
 .transformCard {
+  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+
   display: grid;
   align-content: start;
   gap: var(--space-md);
@@ -328,6 +330,11 @@
   border-radius: var(--radius-lg);
   background: var(--color-paper);
   box-shadow: 0 var(--space-sm) var(--space-xl) var(--color-workspace-shadow);
+}
+
+.transformCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 var(--space-md) var(--space-xl) var(--color-workspace-shadow);
 }
 
 .transformCard[data-state="after"] {
@@ -356,6 +363,10 @@
   display: grid;
   place-items: center;
   color: var(--color-accent-dark);
+}
+
+.transformArrow svg {
+  transform: rotate(90deg);
 }
 
 /* Principles */
@@ -459,7 +470,7 @@
   }
 
   .transformArrow svg {
-    transform: rotate(-90deg);
+    transform: rotate(0deg);
   }
 
   .principleItem {
@@ -471,3 +482,6 @@
 @media (prefers-reduced-motion: reduce) {
   /* Let GSAP handle reduced motion by setting autoAlpha 1 instantly */
 }
+
+
+

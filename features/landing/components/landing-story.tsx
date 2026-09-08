@@ -9,7 +9,7 @@ import styles from "./landing-story.module.css";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const trustPoints = [
-  "Recent public sources",
+  "Public source links",
   "Three distinct directions",
   "Weak-evidence warnings",
   "Beginner-friendly scope",
@@ -20,7 +20,7 @@ const evidenceStages = [
   {
     kind: "Observed evidence",
     title: "Public sources",
-    description: "Recent discussions, reviews, and public pages provide the material ProjectScout can inspect.",
+    description: "Public discussions, reviews, and pages provide the material ProjectScout can inspect.",
   },
   {
     kind: "Observed pattern",
@@ -92,8 +92,8 @@ const principles = [
     description: "Recommendations should be grounded in the public evidence available for the topic.",
   },
   {
-    title: "No invented market claims",
-    description: "Unsupported assumptions stay labelled as interpretation, not presented as market facts.",
+    title: "Claims tied to evidence",
+    description: "Unsupported assumptions are labelled as interpretation instead of being presented as market facts.",
   },
   {
     title: "Differentiated ideas, not clones",
@@ -163,7 +163,7 @@ export function TrustStrip() {
 
   return (
     <section className={styles.trust} id="trust" aria-label="What ProjectScout prioritizes" ref={container}>
-      <span className={"trust-elem " + styles.eyebrow}>Trusted Research Workflow</span>
+      <span className={"trust-elem " + styles.eyebrow}>Research workflow priorities</span>
       <ul className={styles.trustList}>
         {trustPoints.map((point, i) => (
           <li key={point} className="trust-elem">
@@ -266,7 +266,7 @@ export function LandingStory() {
           <SectionIntro
             headingId="evidence-title"
             title="Follow the evidence into the recommendation."
-            description="ProjectScout keeps what people said separate from what the system infers, so a recommendation never masquerades as a sourced fact."
+            description="ProjectScout keeps what people said separate from what the system infers, so readers can distinguish sourced evidence from interpretation."
           />
         </div>
         <div className={styles.evidencePipeline}>
@@ -298,10 +298,10 @@ export function LandingStory() {
         </div>
         <div className={styles.directionsContainer}>
           <div className={styles.directionsTopic + " dir-topic"}>
-            <span className={styles.eyebrow}>Research Topic</span>
+            <span className={styles.eyebrow}>Illustrative research topic</span>
             <h3>Student Fitness Apps</h3>
           </div>
-          <svg className="dir-svg" width="300" height="60" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none" style={{ overflow: "visible" }}>
+          <svg aria-hidden="true" focusable="false" className="dir-svg" width="300" height="60" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none" style={{ overflow: "visible" }}>
             <path d="M150 0 C 150 30, 50 30, 50 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />
             <path d="M150 0 L 150 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />
             <path d="M150 0 C 150 30, 250 30, 250 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />
@@ -339,7 +339,7 @@ export function LandingStory() {
           <SectionIntro
             headingId="audience-title"
             title="Research direction without a research department."
-            description="ProjectScout is built for people who need a credible project decision without advanced market-research experience."
+            description="ProjectScout is built for people who need a clearer project decision without advanced market-research experience."
           />
         </div>
         <dl className={styles.audienceGrid}>
@@ -403,4 +403,3 @@ export function LandingStory() {
     </div>
   );
 }
-

@@ -93,22 +93,23 @@ export function DeleteResearchDialog({
         onSubmit={handleSubmit}
       >
         <header className="delete-research-dialog__header">
-          <h2 id="delete-research-title">Delete research?</h2>
+          <h2 id="delete-research-title">Remove from this browser?</h2>
           <p id="delete-research-description">
-            This will remove this saved research and its result from your history.
+            This removes the locally saved prompt and result from this browser.
+            It does not delete an account-linked copy stored on the server.
           </p>
         </header>
 
         {entry ? (
           <div className="delete-research-dialog__selection">
-            <span>Research to delete</span>
+            <span>Research to remove</span>
             <p className="delete-research-dialog__prompt" title={entry.prompt}>
               {entry.prompt}
             </p>
           </div>
         ) : null}
 
-        {error ? <p className="delete-research-dialog__error" role="alert">{error}</p> : null}
+        {error ? <p className="delete-research-dialog__error" aria-live="polite">{error}</p> : null}
 
         <div className="delete-research-dialog__actions">
           <button
@@ -125,14 +126,14 @@ export function DeleteResearchDialog({
             disabled={deleting}
             data-state={deleting ? "loading" : undefined}
           >
-            {deleting ? "Deleting…" : "Delete research"}
+            {deleting ? "Removing…" : "Remove"}
           </button>
         </div>
 
         <button
           className="delete-research-dialog__close"
           type="button"
-          aria-label="Close delete confirmation"
+          aria-label="Close remove confirmation"
           disabled={deleting}
           onClick={cancel}
         >

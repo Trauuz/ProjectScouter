@@ -2,9 +2,11 @@
 
 import {
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
-  FormEvent,
-  KeyboardEvent as ReactKeyboardEvent,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
 import { speedAdjustedInterval } from "@/shared/motion/motion-config";
@@ -16,20 +18,20 @@ import {
   heroPlaceholderText,
   initialHeroPlaceholder,
 } from "./hero-placeholder";
+import { composerViewport } from "./hero-composer-layout";
 
-const MAX_COMPOSER_HEIGHT = 224;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 function resizeComposer(textarea: HTMLTextAreaElement) {
   textarea.style.height = "auto";
 
-  const nextHeight = Math.min(textarea.scrollHeight, MAX_COMPOSER_HEIGHT);
-  textarea.style.height = `${nextHeight}px`;
-  textarea.style.overflowY =
-    textarea.scrollHeight > MAX_COMPOSER_HEIGHT ? "auto" : "hidden";
+  const viewport = composerViewport(textarea.scrollHeight);
+  textarea.style.height = `${viewport.height}px`;
+  textarea.style.overflowY = viewport.overflowY;
 }
 
 export function HeroComposer() {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [placeholder, setPlaceholder] = useState(initialHeroPlaceholder);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -57,6 +59,13 @@ export function HeroComposer() {
     ? HERO_PROMPT_EXAMPLES[0]
     : heroPlaceholderText(placeholder);
 
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      resizeComposer(textarea);
+    }
+  }, [placeholderText]);
+
   function handleInput(event: FormEvent<HTMLTextAreaElement>) {
     resizeComposer(event.currentTarget);
   }
@@ -78,6 +87,7 @@ export function HeroComposer() {
         Describe the project you want to explore
       </label>
       <textarea
+        ref={textareaRef}
         id="hero-prompt"
         name="prompt"
         rows={1}
@@ -90,6 +100,7 @@ export function HeroComposer() {
         data-gramm_editor="false"
         data-enable-grammarly="false"
         suppressHydrationWarning
+        aria-describedby="hero-prompt-privacy"
         onInput={handleInput}
         onKeyDownCapture={handlePromptKeyDown}
       />

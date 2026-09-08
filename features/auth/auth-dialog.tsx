@@ -19,6 +19,7 @@ const dialogTitles: Record<AuthMode, string> = {
   signup: "Create your account",
   "forgot-password": "Reset your password",
   "check-email": "Check your email",
+  "email-confirmed": "Email confirmed",
   "update-password": "Choose a new password",
 };
 
@@ -96,6 +97,8 @@ export function AuthDialog() {
     setErrors(nextErrors);
     setFormError("");
     if (hasErrors(nextErrors)) {
+      const firstErrorId = nextErrors.email ? "auth-email" : nextErrors.password ? "auth-password" : "auth-password-confirmation";
+      document.getElementById(firstErrorId)?.focus();
       return;
     }
 
@@ -175,18 +178,28 @@ export function AuthDialog() {
         ) : null}
 
         {auth.noticeMessage ? (
-          <p className="auth-form__error" role="alert">{auth.noticeMessage}</p>
+          <p className="auth-form__error" aria-live="polite">{auth.noticeMessage}</p>
         ) : null}
 
-        {auth.mode === "check-email" ? (
+        {auth.mode === "check-email" || auth.mode === "email-confirmed" ? (
           <div className="auth-dialog__confirmation" role="status">
             <AuthSuccessIcon />
-            <p>
-              A secure link was sent to <strong>{auth.noticeEmail}</strong>.
-              Open it in this browser to continue.
-            </p>
+            {auth.mode === "email-confirmed" ? (
+              <div className="auth-dialog__confirmation-copy">
+                <h2>Email confirmed</h2>
+                <p>
+                  Your ProjectScout account is ready. Your research will stay
+                  connected to this account.
+                </p>
+              </div>
+            ) : (
+              <p>
+                A secure link was sent to <strong>{auth.noticeEmail}</strong>.
+                Open it in this browser to continue.
+              </p>
+            )}
             <button className="button auth-dialog__submit" type="button" onClick={auth.closeAuth}>
-              Close
+              {auth.mode === "email-confirmed" ? "Continue to research" : "Close"}
             </button>
           </div>
         ) : (
@@ -198,7 +211,9 @@ export function AuthDialog() {
                   id="auth-email"
                   name="email"
                   type="email"
+                  inputMode="email"
                   autoComplete="email"
+                  spellCheck={false}
                   value={email}
                   aria-invalid={Boolean(errors.email)}
                   aria-describedby="auth-email-message"
@@ -268,7 +283,7 @@ export function AuthDialog() {
               </div>
             ) : null}
 
-            {formError ? <p className="auth-form__error" role="alert">{formError}</p> : null}
+            {formError ? <p className="auth-form__error" aria-live="polite">{formError}</p> : null}
 
             <button
               className="button auth-dialog__submit"
@@ -297,14 +312,22 @@ export function AuthDialog() {
             <>
               By creating an account, you agree to our{" "}
               <LegalLinks
+                keys={["terms"]}
                 onNavigate={auth.closeAuth}
-                order="terms-first"
+              />
+              . See our{" "}
+              <LegalLinks
+                keys={["privacy", "cookies"]}
+                onNavigate={auth.closeAuth}
                 separator=" and "
               />
-              .
+              {" "}for how necessary account data and browser storage are used.
             </>
           ) : (
-            <LegalLinks onNavigate={auth.closeAuth} />
+            <LegalLinks
+              keys={["privacy", "cookies", "terms"]}
+              onNavigate={auth.closeAuth}
+            />
           )}
         </p>
       </div>
