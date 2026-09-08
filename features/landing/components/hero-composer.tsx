@@ -100,7 +100,6 @@ export function HeroComposer() {
         data-gramm_editor="false"
         data-enable-grammarly="false"
         suppressHydrationWarning
-        aria-describedby="hero-prompt-privacy"
         onInput={handleInput}
         onKeyDownCapture={handlePromptKeyDown}
       />

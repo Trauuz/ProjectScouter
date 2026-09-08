@@ -4,7 +4,6 @@ import { MotionScene } from "@/shared/motion/motion-scene";
 import { StartResearchButton } from "@/features/auth";
 
 import { ResearchMap } from "./components/research-map";
-import { HeroPromptPrivacyNotice } from "./components/hero-prompt-privacy-notice";
 import { LandingStory, TrustStrip } from "./components/landing-story";
 import { ScrollGuide } from "./components/scroll-guide";
 
@@ -53,7 +52,6 @@ export function LandingPage() {
           </StartResearchButton>
         </section>
       </main>
-      <HeroPromptPrivacyNotice />
       <SiteFooter />
     </MotionScene>
   );

@@ -1697,26 +1697,3 @@ figure {
   }
 }
 
-.hero-composer__privacy {
-  display: none;
-  position: fixed;
-  inset-block-end: 0;
-  inset-inline: 0;
-  width: 100%;
-  padding-block-start: var(--space-xs);
-  padding-block-end: max(var(--space-xs), env(safe-area-inset-bottom));
-  padding-inline: var(--page-gutter);
-  background: var(--color-paper-raised);
-  border-block-start: var(--rule-hairline) solid var(--color-rule);
-  text-align: center;
-  font-size: var(--text-sm);
-  color: var(--color-ink-muted);
-  z-index: 50;
-}
-
-@media (min-width: 48rem) {
-  .hero-composer__privacy {
-    display: block;
-  }
-}
-
