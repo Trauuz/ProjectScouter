@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.intro}>
           <h1>Privacy Policy</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-09-08">September 8, 2026</time>
+            Last updated: <time dateTime="2026-09-14">September 14, 2026</time>
           </p>
           <p className={styles.lede}>
             This policy explains the personal data ProjectScout handles and your
@@ -164,9 +164,25 @@ export default function PrivacyPolicyPage() {
                 Server records are retained while reasonably needed to provide and
                 protect the service, meet legal obligations, or resolve disputes; the
                 current system has no fixed automatic deletion period. Browser history
-                remains until you remove it or clear site data. Removing an item in the
-                interface deletes the browser copy only. You may request deletion of
-                server data, subject to lawful exceptions.
+                remains until you remove it, clear site data, or submit an account
+                deletion request. Removing an individual item in the interface deletes
+                the browser copy only. Once an account deletion request is durably
+                recorded, ProjectScout revokes application access and removes this
+                browser&apos;s research history, completed results, pending authentication
+                request, and local authentication session. Unrelated browser preferences
+                are not removed.
+              </p>
+              <p>
+                Account deletion then removes the authentication account before
+                deleting account-linked research and usage data. Temporary failures are
+                retained as retryable deletion jobs so application data is not removed
+                while the authentication account remains active. Until completion, a
+                job retains the account UUID needed for retry; completion removes that
+                UUID. Minimal security audit records retain only a deletion request ID,
+                processing stage, timestamps, and sanitized failure code—not prompts,
+                results, email addresses, or other account content. These operational
+                records currently have no fixed automatic expiry. Server data may remain
+                where retention is permitted or required by law.
               </p>
               <p>
                 ProjectScout limits local history to 20 entries and limits prompts to

@@ -63,7 +63,11 @@ export function SiteHeader({
   );
 
   const accountMenu = auth.user ? (
-    <AccountMenu user={auth.user} onSignOut={auth.signOut} />
+    <AccountMenu
+      user={auth.user}
+      onSignOut={auth.signOut}
+      onDeleteAccount={auth.deleteAccount}
+    />
   ) : null;
 
   return (

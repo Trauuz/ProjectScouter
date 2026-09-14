@@ -7,9 +7,16 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { createAuthIdentity, type AuthIdentity } from "@/shared/auth/auth-identity";
 
 import { AuthContext, type AuthActionResult, type AuthMode } from "./auth-context";
+import { completeAccountDeletion } from "./account-deletion-client";
+import { clearBrowserAccountData } from "./account-local-data";
 import { consumeAuthCallback } from "./auth-callback";
 import { AuthDialog } from "./auth-dialog";
 import { reportAuthFailure, toAuthFailure } from "./auth-errors";
+import {
+  loginFailureResponse,
+  passwordResetResponse,
+  signupResponse,
+} from "./auth-response-policy";
 import {
   createPendingAuthIntentStore,
   type NewPendingAuthIntent,
@@ -35,7 +42,7 @@ export function AuthProvider({
   const [ready, setReady] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<AuthMode>("login");
-  const [noticeEmail, setNoticeEmail] = useState("");
+  const [checkEmailMessage, setCheckEmailMessage] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
   const resumedIntentRef = useRef<string | null>(null);
   const recoveryModeRef = useRef(false);
@@ -180,14 +187,23 @@ export function AuthProvider({
       return { ok: true };
     } catch (reason) {
       reportAuthFailure("login", reason);
-      return { ok: false, message: toAuthFailure(reason).message };
+      return { ok: false, message: loginFailureResponse(reason).message };
     }
   }, [finishAuthentication]);
 
   const signUp = useCallback(async (email: string, password: string): Promise<AuthActionResult> => {
+    const showCheckEmail = () => {
+      const intent = pendingStore?.peek();
+      if (intent) {
+        pendingStore?.markAwaitingConfirmation(intent.id);
+      }
+      setCheckEmailMessage(signupResponse().message);
+      setMode("check-email");
+    };
+
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
@@ -195,23 +211,18 @@ export function AuthProvider({
       if (error) {
         throw error;
       }
-      if (data.session) {
-        finishAuthentication(data.user);
-        return { ok: true };
-      }
-
-      const intent = pendingStore?.peek();
-      if (intent) {
-        pendingStore?.markAwaitingConfirmation(intent.id);
-      }
-      setNoticeEmail(email);
-      setMode("check-email");
+      showCheckEmail();
       return { ok: true };
     } catch (reason) {
       reportAuthFailure("signup", reason);
-      return { ok: false, message: toAuthFailure(reason).message };
+      const response = signupResponse(reason);
+      if (response.kind === "check_email") {
+        showCheckEmail();
+        return { ok: true };
+      }
+      return { ok: false, message: response.message };
     }
-  }, [finishAuthentication, pendingStore]);
+  }, [pendingStore]);
 
   const sendPasswordReset = useCallback(async (email: string): Promise<AuthActionResult> => {
     try {
@@ -222,12 +233,18 @@ export function AuthProvider({
       if (error) {
         throw error;
       }
-      setNoticeEmail(email);
+      setCheckEmailMessage(passwordResetResponse().message);
       setMode("check-email");
       return { ok: true };
     } catch (reason) {
       reportAuthFailure("password-reset", reason);
-      return { ok: false, message: toAuthFailure(reason).message };
+      const response = passwordResetResponse(reason);
+      if (response.kind === "check_email") {
+        setCheckEmailMessage(response.message);
+        setMode("check-email");
+        return { ok: true };
+      }
+      return { ok: false, message: response.message };
     }
   }, []);
 
@@ -262,6 +279,25 @@ export function AuthProvider({
     });
   }, [pendingStore, router]);
 
+  const deleteAccount = useCallback((): Promise<AuthActionResult> => {
+    return completeAccountDeletion({
+      deleteFromServer: () => fetch("/api/account", { method: "DELETE" }),
+      clearLocalAccountData: clearBrowserAccountData,
+      revokeLocalSession: () =>
+        getSupabaseBrowserClient().auth.signOut({ scope: "local" }),
+      onDeleted: () => {
+        setUser(null);
+        router.replace("/");
+        router.refresh();
+      },
+      onFailure: (reason) => reportAuthFailure("account-deletion", reason),
+      onLocalCleanupFailure: (reason) =>
+        reportAuthFailure("account-deletion-local-cleanup", reason),
+      onSessionCleanupFailure: (reason) =>
+        reportAuthFailure("account-deletion-session-cleanup", reason),
+    });
+  }, [router]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -269,7 +305,7 @@ export function AuthProvider({
         ready,
         isOpen,
         mode,
-        noticeEmail,
+        checkEmailMessage,
         noticeMessage,
         openAuth,
         closeAuth,
@@ -279,6 +315,7 @@ export function AuthProvider({
         sendPasswordReset,
         updatePassword,
         signOut,
+        deleteAccount,
       }}
     >
       {children}

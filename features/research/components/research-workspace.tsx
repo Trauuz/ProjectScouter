@@ -29,6 +29,7 @@ import type {
   ResearchResponse,
   ResearchSource,
 } from "@/server/research/domain/research-report";
+import { subscribeToAccountLocalDataCleared } from "../../auth/account-local-data";
 
 import { usePromptHistory } from "../prompt-history/use-prompt-history";
 import type { PromptHistoryEntry } from "../prompt-history/prompt-history-store";
@@ -516,6 +517,20 @@ export function ResearchWorkspace({
   const mobileSidebarCloseRef = useRef<HTMLButtonElement>(null);
   const mobileSidebarReturnFocusRef = useRef<HTMLElement | null>(null);
   const autoStartedRef = useRef(false);
+
+  useEffect(() => {
+    return subscribeToAccountLocalDataCleared(() => {
+      controllerRef.current?.abort();
+      controllerRef.current = null;
+      setPrompt("");
+      setLastSubmittedPrompt("");
+      setState({ status: "idle" });
+      setActiveResearchId(null);
+      setDeleteTarget(null);
+      setDeleteError("");
+      setDeleting(false);
+    });
+  }, []);
   const resumeStartedRef = useRef<string | null>(null);
   const directGateOpenedRef = useRef(false);
   const { contextSafe } = useGSAP({ scope: workspaceRef });
@@ -1020,6 +1035,7 @@ export function ResearchWorkspace({
                     <AccountMenuPanel
                       user={auth.user}
                       onSignOut={auth.signOut}
+                      onDeleteAccount={auth.deleteAccount}
                       active={mobileSidebarOpen}
                       onRequestClose={onCloseMobileSidebar}
                     />

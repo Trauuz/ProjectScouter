@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/server/auth/supabase-server-client";
 import { getResearchRunRepository } from "@/server/research/infrastructure/drizzle-research-run-repository";
-import { getOrCreateVisitorSession } from "@/server/research/presentation/visitor-session";
+import {
+  getOrCreateVisitorSession,
+  rotateCurrentVisitorSession,
+} from "@/server/research/presentation/visitor-session";
 
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "email",
@@ -18,6 +21,7 @@ async function attachAnonymousRuns(userId: string): Promise<void> {
   try {
     const sessionId = await getOrCreateVisitorSession();
     await getResearchRunRepository().attachResearchRunsToUser(sessionId, userId);
+    await rotateCurrentVisitorSession();
   } catch (reason) {
     console.error("[auth-confirm] Could not attach anonymous research runs", reason);
   }

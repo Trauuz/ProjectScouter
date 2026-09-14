@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAuthIdentity, type AuthIdentity } from "@/shared/auth/auth-identity";
 
+import { canRunResearch } from "./account-deletion-service";
 import { createSupabaseServerClient } from "./supabase-server-client";
 
 export async function getOptionalAuthIdentity(): Promise<AuthIdentity | null> {
@@ -24,3 +25,15 @@ export async function getOptionalAuthIdentity(): Promise<AuthIdentity | null> {
   }
 }
 
+export async function getActiveAuthIdentity(): Promise<AuthIdentity | null> {
+  const identity = await getOptionalAuthIdentity();
+  if (!identity) {
+    return null;
+  }
+
+  try {
+    return await canRunResearch(identity.id) ? identity : null;
+  } catch {
+    return null;
+  }
+}

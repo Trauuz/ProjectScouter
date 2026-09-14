@@ -25,6 +25,96 @@ export const evidenceStrengthEnum = projectScoutSchema.enum(
   ["strong", "medium", "weak"],
 );
 
+export const usageReservationStatusEnum = projectScoutSchema.enum(
+  "usage_reservation_status",
+  ["pending", "completed", "released"],
+);
+
+export const accountDeletionStatusEnum = projectScoutSchema.enum(
+  "account_deletion_status",
+  ["pending", "retryable_failed", "completed"],
+);
+
+export const accountDeletionStepEnum = projectScoutSchema.enum(
+  "account_deletion_step",
+  [
+    "revoke_access",
+    "delete_authentication",
+    "delete_application_data",
+    "complete",
+  ],
+);
+
+export const accountDeletionAuditEventEnum = projectScoutSchema.enum(
+  "account_deletion_audit_event",
+  [
+    "request_recorded",
+    "access_revoked",
+    "authentication_deleted",
+    "application_data_deleted",
+    "retryable_failure",
+    "completed",
+  ],
+);
+
+export const accountDeletionRequests = projectScoutSchema.table(
+  "account_deletion_requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id"),
+    status: accountDeletionStatusEnum("status").default("pending").notNull(),
+    nextStep: accountDeletionStepEnum("next_step")
+      .default("revoke_access")
+      .notNull(),
+    attemptCount: integer("attempt_count").default(1).notNull(),
+    lastErrorCode: text("last_error_code"),
+    requestedAt: timestamp("requested_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", {
+      withTimezone: true,
+      mode: "date",
+    }).defaultNow().notNull(),
+    nextAttemptAt: timestamp("next_attempt_at", {
+      withTimezone: true,
+      mode: "date",
+    }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true, mode: "date" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("account_deletion_requests_user_uidx").on(table.userId),
+    index("account_deletion_requests_retry_idx").on(
+      table.status,
+      table.nextAttemptAt,
+    ),
+  ],
+);
+
+export const accountDeletionAuditEvents = projectScoutSchema.table(
+  "account_deletion_audit_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => accountDeletionRequests.id, { onDelete: "cascade" }),
+    event: accountDeletionAuditEventEnum("event").notNull(),
+    step: accountDeletionStepEnum("step").notNull(),
+    errorCode: text("error_code"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("account_deletion_audit_events_request_idx").on(
+      table.requestId,
+      table.occurredAt,
+    ),
+  ],
+);
+
 export const accountMonthlyUsage = projectScoutSchema.table(
   "account_monthly_usage",
   {
@@ -39,6 +129,32 @@ export const accountMonthlyUsage = projectScoutSchema.table(
       .notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.periodStart] })],
+);
+
+export const usageReservations = projectScoutSchema.table(
+  "usage_reservations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull(),
+    accountPeriodStart: date("account_period_start", { mode: "string" })
+      .notNull(),
+    status: usageReservationStatusEnum("status")
+      .default("pending")
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("usage_reservations_user_period_status_idx").on(
+      table.userId,
+      table.accountPeriodStart,
+      table.status,
+    ),
+  ],
 );
 
 export const researchRuns = projectScoutSchema.table(

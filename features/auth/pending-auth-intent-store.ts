@@ -95,6 +95,10 @@ export class LocalPendingAuthIntentStore {
       this.storage.removeItem(STORAGE_KEY);
     }
   }
+
+  clear(): void {
+    this.storage.removeItem(STORAGE_KEY);
+  }
 }
 
 export function createPendingAuthIntentStore(): LocalPendingAuthIntentStore {

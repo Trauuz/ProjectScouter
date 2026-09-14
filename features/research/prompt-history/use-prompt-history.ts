@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { subscribeToAccountLocalDataCleared } from "../../auth/account-local-data";
 import {
   createBrowserPromptHistoryStore,
   type PromptHistoryEntry,
@@ -23,6 +24,7 @@ const STORE_METHODS = [
   "save",
   "saveCompleted",
   "delete",
+  "clear",
   "findCompleted",
 ] as const;
 
@@ -65,6 +67,16 @@ export function usePromptHistory(
 
   useEffect(() => {
     setEntries(getStore().loadEntries());
+  }, [getStore]);
+
+  useEffect(() => {
+    return subscribeToAccountLocalDataCleared(() => {
+      try {
+        getStore().clear();
+      } finally {
+        setEntries([]);
+      }
+    });
   }, [getStore]);
 
   const rememberPrompt = useCallback(

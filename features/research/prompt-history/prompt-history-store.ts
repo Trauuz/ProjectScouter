@@ -28,7 +28,7 @@ type VersionTwoPromptHistoryEntry = {
   completed: ResearchResponse | null;
 };
 
-type StoragePort = Pick<Storage, "getItem" | "setItem">;
+type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export interface PromptHistoryStore {
   load(): string[];
@@ -36,6 +36,7 @@ export interface PromptHistoryStore {
   save(prompt: string): string[];
   saveCompleted(response: ResearchResponse): string[];
   delete(id: string): string[];
+  clear(): void;
   findCompleted(idOrPrompt: string): ResearchResponse | null;
 }
 
@@ -263,6 +264,14 @@ export class LocalPromptHistoryStore implements PromptHistoryStore {
     return history.map((entry) => entry.prompt);
   }
 
+  clear(): void {
+    try {
+      this.storage.removeItem(PROMPT_HISTORY_STORAGE_KEY);
+    } catch (reason) {
+      throw new Error("Research history could not be cleared.", { cause: reason });
+    }
+  }
+
   findCompleted(idOrPrompt: string): ResearchResponse | null {
     const entry = this.loadEntries().find(
       (candidate) => candidate.id === idOrPrompt,
@@ -359,6 +368,10 @@ export class MemoryPromptHistoryStore implements PromptHistoryStore {
   delete(id: string): string[] {
     this.entries = this.entries.filter((entry) => entry.id !== id);
     return this.load();
+  }
+
+  clear(): void {
+    this.entries = [];
   }
 
   findCompleted(idOrPrompt: string): ResearchResponse | null {

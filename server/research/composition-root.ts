@@ -9,6 +9,7 @@ import {
 import { readResearchEnvironment } from "./infrastructure/research-environment";
 import { createResearchPostHandler } from "./presentation/create-research-handler";
 import { getMonthlyUsageMeter } from "@/server/usage/drizzle-monthly-usage-meter";
+import { canRunResearch } from "@/server/auth/account-deletion-service";
 
 type ResearchPostHandler = ReturnType<typeof createResearchPostHandler>;
 
@@ -35,6 +36,7 @@ export function getResearchPostHandler(): ResearchPostHandler {
       windowMs: 10 * 60 * 1_000,
     }),
     usageMeter: getMonthlyUsageMeter(),
+    accountAccess: { canResearch: canRunResearch },
   });
 
   return handler;

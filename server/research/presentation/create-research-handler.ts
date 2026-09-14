@@ -9,7 +9,10 @@ import type {
   ResearchApiErrorCode,
   ResearchErrorResponse,
 } from "../domain/research-report";
-import type { MonthlyUsageMeter } from "@/server/usage/monthly-usage";
+import type {
+  MonthlyUsageMeter,
+  UsageReservation,
+} from "@/server/usage/monthly-usage";
 
 const MAX_BODY_BYTES = 4_096;
 const REQUEST_TIMEOUT_MS = 85_000;
@@ -22,6 +25,9 @@ type Dependencies = {
   workflow: ResearchWorkflow;
   rateLimiter: RateLimiter;
   usageMeter?: Pick<MonthlyUsageMeter, "reserve">;
+  accountAccess?: {
+    canResearch(userId: string): Promise<boolean>;
+  };
   diagnostics?: ResearchDiagnostics;
 };
 
@@ -58,15 +64,12 @@ function errorResponse(
   });
 }
 
-function requestKey(request: Request): string {
-  const forwarded = request.headers
-    .get("x-forwarded-for")
-    ?.split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .at(-1);
+function rateLimitKey(owner: ResearchOwner): string {
+  if (owner.userId) {
+    return `account:${owner.userId}`;
+  }
 
-  return forwarded || request.headers.get("x-real-ip") || "local";
+  return `visitor:${owner.sessionId.toString()}`;
 }
 
 function isAllowedOrigin(request: Request): boolean {
@@ -144,6 +147,7 @@ export function createResearchPostHandler({
   workflow,
   rateLimiter,
   usageMeter,
+  accountAccess,
   diagnostics = DEFAULT_DIAGNOSTICS,
 }: Dependencies) {
   return async function POST(
@@ -174,7 +178,20 @@ export function createResearchPostHandler({
       );
     }
 
-    const limit = rateLimiter.check(requestKey(request));
+    if (
+      owner.userId &&
+      accountAccess &&
+      !(await accountAccess.canResearch(owner.userId))
+    ) {
+      return errorResponse(
+        423,
+        "ACCOUNT_DELETION_PENDING",
+        "Account deletion is pending. New research is unavailable.",
+        false,
+      );
+    }
+
+    const limit = rateLimiter.check(rateLimitKey(owner));
     if (!limit.allowed) {
       return errorResponse(
         429,
@@ -184,6 +201,8 @@ export function createResearchPostHandler({
         { "Retry-After": String(limit.retryAfterSeconds) },
       );
     }
+
+    let usageReservation: UsageReservation | undefined;
 
     try {
       const prompt = await readPrompt(request);
@@ -224,6 +243,7 @@ export function createResearchPostHandler({
             false,
           );
         }
+        usageReservation = reservation.reservation;
       }
       const signal = AbortSignal.any([
         request.signal,
@@ -231,8 +251,20 @@ export function createResearchPostHandler({
       ]);
       const result = await workflow.execute(prompt, owner, signal);
 
+      if (result.persistence.status === "failed") {
+        await usageReservation?.release();
+      } else {
+        await usageReservation?.complete();
+      }
+
       return Response.json(result, { headers: RESPONSE_HEADERS });
     } catch (reason) {
+      try {
+        await usageReservation?.release();
+      } catch (releaseReason) {
+        diagnostics.reportFailure(releaseReason);
+      }
+
       if (
         reason instanceof ResearchFailure &&
         reason.message === "PAYLOAD_TOO_LARGE"

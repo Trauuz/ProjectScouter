@@ -319,6 +319,10 @@ figure {
   border-color: var(--color-rule);
 }
 
+.account-menu__delete {
+  color: var(--color-error);
+}
+
 .account-menu__item:active {
   transform: translateY(var(--rule-hairline));
 }
@@ -638,6 +642,112 @@ figure {
   color: var(--color-success);
 }
 
+.account-deletion-dialog {
+  position: fixed;
+  z-index: var(--z-modal);
+  inset: 0;
+  width: min(calc(100% - var(--space-xl)), 34rem);
+  height: fit-content;
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.account-deletion-dialog[open] {
+  animation: usage-dialog-enter var(--dur-long) var(--ease-out) both;
+}
+
+.account-deletion-dialog::backdrop {
+  background: var(--color-overlay);
+  animation: usage-backdrop-enter var(--dur-long) var(--ease-out) both;
+}
+
+.account-deletion-dialog__surface {
+  display: grid;
+  gap: var(--space-lg);
+  padding: clamp(var(--space-lg), 5vw, var(--space-2xl));
+  background: var(--color-paper-raised);
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-composer-field);
+  box-shadow: 0 var(--space-xl) var(--space-3xl) var(--color-workspace-shadow);
+}
+
+.account-deletion-dialog__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-md);
+}
+
+.account-deletion-dialog__header > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.account-deletion-dialog__header p {
+  color: var(--color-error);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.account-deletion-dialog__header h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1.1;
+}
+
+.account-deletion-dialog__close {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: var(--rule-hairline) solid var(--color-rule);
+  border-radius: var(--radius-round);
+  background: var(--color-workspace-soft);
+  color: var(--color-ink);
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+
+.account-deletion-dialog__note {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.account-deletion-dialog__error {
+  padding: var(--space-sm) var(--space-md);
+  border: var(--rule-hairline) solid var(--color-error);
+  border-radius: var(--radius-md);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+}
+
+.account-deletion-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.account-deletion-dialog__cancel {
+  background: var(--color-paper-raised);
+  color: var(--color-ink);
+}
+
+.account-deletion-dialog__confirm {
+  background: var(--color-error);
+  border-color: var(--color-error);
+}
+
 .site-nav {
   align-items: center;
   justify-content: center;
@@ -711,6 +821,7 @@ figure {
 .account-menu summary:focus-visible,
 .account-menu__item:focus-visible,
 .bug-report-dialog__close:focus-visible,
+.account-deletion-dialog__close:focus-visible,
 .mobile-nav summary:focus-visible,
 .mobile-nav nav > a:focus-visible,
 .site-footer a:focus-visible,
@@ -1054,6 +1165,13 @@ figure {
   gap: var(--space-md) var(--space-lg);
 }
 
+.site-footer__legal-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-self: end;
+}
+
 .site-footer__legal {
   display: inline-flex;
   align-items: center;
@@ -1090,7 +1208,13 @@ figure {
     color: var(--color-accent-dark);
   }
 
-  .bug-report-dialog__close:hover {
+  .account-menu__delete:hover {
+    background: var(--color-error-soft);
+    color: var(--color-error);
+  }
+
+  .bug-report-dialog__close:hover,
+  .account-deletion-dialog__close:hover {
     background: var(--color-accent-soft);
     color: var(--color-accent-dark);
   }
@@ -1149,11 +1273,7 @@ figure {
 @media (min-width: 40rem) {
   .site-footer__meta {
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-
-  .site-footer__legal {
-    justify-self: end;
+    align-items: start;
   }
 }
 
@@ -1217,7 +1337,9 @@ figure {
   .usage-dialog[open],
   .usage-dialog::backdrop,
   .bug-report-dialog[open],
-  .bug-report-dialog::backdrop {
+  .bug-report-dialog::backdrop,
+  .account-deletion-dialog[open],
+  .account-deletion-dialog::backdrop {
     animation-duration: var(--dur-instant);
     transform: none;
   }

@@ -1,4 +1,4 @@
-import { getOptionalAuthIdentity } from "@/server/auth/get-auth-identity";
+import { getActiveAuthIdentity } from "@/server/auth/get-auth-identity";
 import { getMonthlyUsageMeter } from "@/server/usage/drizzle-monthly-usage-meter";
 
 export const runtime = "nodejs";
@@ -9,7 +9,7 @@ const RESPONSE_HEADERS = {
 };
 
 export async function GET(): Promise<Response> {
-  const identity = await getOptionalAuthIdentity();
+  const identity = await getActiveAuthIdentity();
   if (!identity) {
     return Response.json(
       { error: "Authentication required." },

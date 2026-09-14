@@ -22,11 +22,56 @@ export type MonthlyUsage = {
   resetsAt: string;
 };
 
-export type MonthlyUsageReservation = {
-  allowed: boolean;
-  usage: MonthlyUsage;
-  denialReason?: UsageDenialReason;
-};
+export type UsageReservationState = "pending" | "completed" | "released";
+type TerminalUsageReservationState = Exclude<
+  UsageReservationState,
+  "pending"
+>;
+type ReservationTransition = (
+  state: TerminalUsageReservationState,
+) => Promise<void>;
+
+export class UsageReservation {
+  private transitionPromise: Promise<void> | undefined;
+
+  constructor(private readonly transition: ReservationTransition) {}
+
+  complete(): Promise<void> {
+    return this.finish("completed");
+  }
+
+  release(): Promise<void> {
+    return this.finish("released");
+  }
+
+  private finish(state: TerminalUsageReservationState): Promise<void> {
+    if (this.transitionPromise) {
+      return this.transitionPromise;
+    }
+
+    const attempt = Promise.resolve().then(() => this.transition(state));
+    const guardedAttempt = attempt.catch((reason: unknown) => {
+      if (this.transitionPromise === guardedAttempt) {
+        this.transitionPromise = undefined;
+      }
+      throw reason;
+    });
+    this.transitionPromise = guardedAttempt;
+    return guardedAttempt;
+  }
+}
+
+export type MonthlyUsageReservation =
+  | {
+      allowed: true;
+      usage: MonthlyUsage;
+      reservation: UsageReservation;
+    }
+  | {
+      allowed: false;
+      usage: MonthlyUsage;
+      denialReason: UsageDenialReason;
+    };
 
 export type MonthlyUsageMeter = {
   read(userId: string, now?: Date): Promise<MonthlyUsage>;

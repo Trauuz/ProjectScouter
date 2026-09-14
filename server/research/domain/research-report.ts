@@ -52,6 +52,7 @@ export type ResearchPersistenceStatus =
 
 export type ResearchApiErrorCode =
   | "AUTH_REQUIRED"
+  | "ACCOUNT_DELETION_PENDING"
   | "INVALID_CONTENT_TYPE"
   | "PAYLOAD_TOO_LARGE"
   | "INVALID_PROMPT"

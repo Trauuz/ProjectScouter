@@ -11,6 +11,7 @@ const BUG_REPORT_MAX_LENGTH = 2000;
 type AccountMenuProps = {
   user: AuthIdentity;
   onSignOut(): Promise<SignOutResult>;
+  onDeleteAccount(): Promise<SignOutResult>;
 };
 
 type SignOutResult =
@@ -41,10 +42,12 @@ function resetDateLabel(resetsAt: string): string {
 type MenuIconName =
   | "back"
   | "dashboard"
+  | "delete"
   | "help"
   | "logout"
   | "privacy"
   | "report"
+  | "settings"
   | "terms"
   | "usage";
 
@@ -57,6 +60,14 @@ function MenuIcon({ name }: { name: MenuIconName }) {
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
         <rect x="14" y="14" width="7" height="7" rx="1" />
+      </>
+    ),
+    delete: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M8 6V4h8v2" />
+        <path d="m19 6-1 14H6L5 6" />
+        <path d="M10 11v5M14 11v5" />
       </>
     ),
     help: (
@@ -85,6 +96,12 @@ function MenuIcon({ name }: { name: MenuIconName }) {
         <path d="M8 8.5 5.5 6M16 8.5 18.5 6M12 5V2" />
         <rect x="6" y="6" width="12" height="15" rx="6" />
         <path d="M6 13H3M21 13h-3M7 18l-2 2M17 18l2 2" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
       </>
     ),
     terms: (
@@ -235,6 +252,144 @@ function UsageDialog({
           Close
         </button>
       </div>
+    </dialog>
+  );
+}
+
+function AccountDeletionDialog({
+  open,
+  titleId,
+  descriptionId,
+  pending,
+  error,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  titleId: string;
+  descriptionId: string;
+  pending: boolean;
+  error: string;
+  onClose(): void;
+  onConfirm(): void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const backdropPointerDownRef = useRef(false);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (open && !dialog.open) {
+      dialog.showModal();
+    }
+    if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const root = document.documentElement;
+    const previousRootOverflow = root.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    root.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = previousRootOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [open]);
+
+  function requestClose() {
+    if (!pending) {
+      onClose();
+    }
+  }
+
+  return (
+    <dialog
+      className="account-deletion-dialog"
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      onCancel={(event) => {
+        event.preventDefault();
+        requestClose();
+      }}
+      onPointerDown={(event) => {
+        backdropPointerDownRef.current = event.target === event.currentTarget;
+      }}
+      onPointerCancel={() => {
+        backdropPointerDownRef.current = false;
+      }}
+      onClick={(event) => {
+        const startedOnBackdrop = backdropPointerDownRef.current;
+        backdropPointerDownRef.current = false;
+        if (startedOnBackdrop && event.target === event.currentTarget) {
+          requestClose();
+        }
+      }}
+    >
+      <form
+        className="account-deletion-dialog__surface"
+        data-lenis-prevent
+        onSubmit={(event) => {
+          event.preventDefault();
+          onConfirm();
+        }}
+      >
+        <header className="account-deletion-dialog__header">
+          <div>
+            <p>Account settings</p>
+            <h2 id={titleId}>Delete your account?</h2>
+          </div>
+          <button
+            className="account-deletion-dialog__close"
+            type="button"
+            aria-label="Close account deletion confirmation"
+            disabled={pending}
+            onClick={requestClose}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <p className="account-deletion-dialog__note" id={descriptionId}>
+          This starts permanent account deletion and immediately revokes access.
+          ProjectScout then deletes your login, server-side research and usage
+          history, and this browser&apos;s saved research. Temporary failures are
+          recorded and retried. This action cannot be undone.
+        </p>
+
+        {error ? (
+          <p className="account-deletion-dialog__error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="account-deletion-dialog__actions">
+          <button
+            className="button account-deletion-dialog__cancel"
+            type="button"
+            disabled={pending}
+            onClick={requestClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="button account-deletion-dialog__confirm"
+            type="submit"
+            disabled={pending}
+            aria-busy={pending}
+          >
+            {pending ? "Deleting…" : "Delete account"}
+          </button>
+        </div>
+      </form>
     </dialog>
   );
 }
@@ -390,27 +545,33 @@ function BugReportDialog({
 export function AccountMenuPanel({
   user,
   onSignOut,
+  onDeleteAccount,
   active = true,
   onRequestClose,
 }: AccountMenuPanelProps) {
   const usageTitleId = useId();
   const bugReportTitleId = useId();
   const bugReportTextareaId = useId();
+  const deletionTitleId = useId();
+  const deletionDescriptionId = useId();
   const signOutErrorId = useId();
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [menuView, setMenuView] = useState<"root" | "help" | "settings">("root");
   const [usageOpen, setUsageOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
+  const [deletionOpen, setDeletionOpen] = useState(false);
+  const [deletionPending, setDeletionPending] = useState(false);
+  const [deletionError, setDeletionError] = useState("");
   const [signOutPending, setSignOutPending] = useState(false);
   const [signOutError, setSignOutError] = useState("");
 
   useEffect(() => {
     if (!active) {
-      setHelpOpen(false);
+      setMenuView("root");
     }
   }, [active]);
 
   function closeMenu() {
-    setHelpOpen(false);
+    setMenuView("root");
     onRequestClose?.();
   }
 
@@ -420,6 +581,33 @@ export function AccountMenuPanel({
 
   function showBugReport() {
     setBugReportOpen(true);
+  }
+
+  function showAccountDeletion() {
+    setDeletionError("");
+    setDeletionOpen(true);
+  }
+
+  async function confirmAccountDeletion() {
+    if (deletionPending) {
+      return;
+    }
+
+    setDeletionError("");
+    setDeletionPending(true);
+    try {
+      const result = await onDeleteAccount();
+      if (!result.ok) {
+        setDeletionError(result.message);
+        return;
+      }
+      setDeletionOpen(false);
+      closeMenu();
+    } catch {
+      setDeletionError("Your account could not be deleted. Please try again.");
+    } finally {
+      setDeletionPending(false);
+    }
   }
 
   async function signOut() {
@@ -453,12 +641,12 @@ export function AccountMenuPanel({
             <p>{user.email}</p>
           </div>
 
-          {helpOpen ? (
+          {menuView === "help" ? (
             <div className="account-menu__view" aria-label="Help menu">
               <button
                 className="account-menu__item account-menu__back"
                 type="button"
-                onClick={() => setHelpOpen(false)}
+                onClick={() => setMenuView("root")}
               >
                 <MenuIcon name="back" />
                 <span>Help</span>
@@ -489,20 +677,49 @@ export function AccountMenuPanel({
                 <span>Report a bug</span>
               </button>
             </div>
+          ) : menuView === "settings" ? (
+            <div className="account-menu__view" aria-label="Settings menu">
+              <button
+                className="account-menu__item account-menu__back"
+                type="button"
+                onClick={() => setMenuView("root")}
+              >
+                <MenuIcon name="back" />
+                <span>Settings</span>
+              </button>
+              <div className="account-menu__rule" />
+              <button className="account-menu__item" type="button" onClick={showUsage}>
+                <MenuIcon name="usage" />
+                <span>Usage</span>
+              </button>
+              <button
+                className="account-menu__item account-menu__delete"
+                type="button"
+                onClick={showAccountDeletion}
+              >
+                <MenuIcon name="delete" />
+                <span>Delete account</span>
+              </button>
+            </div>
           ) : (
             <div className="account-menu__view" aria-label="Account options">
               <Link className="account-menu__item" href="/research" onClick={closeMenu}>
                 <MenuIcon name="dashboard" />
                 <span>Dashboard</span>
               </Link>
-              <button className="account-menu__item" type="button" onClick={showUsage}>
-                <MenuIcon name="usage" />
-                <span>Usage</span>
+              <button
+                className="account-menu__item account-menu__item--forward"
+                type="button"
+                onClick={() => setMenuView("settings")}
+              >
+                <MenuIcon name="settings" />
+                <span>Settings</span>
+                <span className="account-menu__chevron" aria-hidden="true">›</span>
               </button>
               <button
                 className="account-menu__item account-menu__item--forward"
                 type="button"
-                onClick={() => setHelpOpen(true)}
+                onClick={() => setMenuView("help")}
               >
                 <MenuIcon name="help" />
                 <span>Help</span>
@@ -539,6 +756,18 @@ export function AccountMenuPanel({
           closeMenu();
         }}
       />
+      <AccountDeletionDialog
+        open={deletionOpen}
+        titleId={deletionTitleId}
+        descriptionId={deletionDescriptionId}
+        pending={deletionPending}
+        error={deletionError}
+        onClose={() => {
+          setDeletionError("");
+          setDeletionOpen(false);
+        }}
+        onConfirm={() => void confirmAccountDeletion()}
+      />
       <BugReportDialog
         open={bugReportOpen}
         titleId={bugReportTitleId}
@@ -552,7 +781,7 @@ export function AccountMenuPanel({
   );
 }
 
-export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
+export function AccountMenu({ user, onSignOut, onDeleteAccount }: AccountMenuProps) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -574,6 +803,7 @@ export function AccountMenu({ user, onSignOut }: AccountMenuProps) {
       <AccountMenuPanel
         user={user}
         onSignOut={onSignOut}
+        onDeleteAccount={onDeleteAccount}
         active={open}
         onRequestClose={closeMenu}
       />

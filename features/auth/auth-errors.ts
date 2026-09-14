@@ -1,7 +1,8 @@
+import { isAuthError } from "@supabase/supabase-js";
+
 export type AuthFailureKind =
   | "configuration"
   | "credentials"
-  | "unverified"
   | "rate_limited"
   | "weak_password"
   | "unavailable"
@@ -12,7 +13,12 @@ export type AuthFailure = {
   message: string;
 };
 
+export function authErrorCode(reason: unknown): string | undefined {
+  return isAuthError(reason) ? reason.code : undefined;
+}
+
 export function toAuthFailure(reason: unknown): AuthFailure {
+  const code = authErrorCode(reason);
   const rawMessage = reason instanceof Error ? reason.message : String(reason);
   const message = rawMessage.toLowerCase();
 
@@ -26,27 +32,32 @@ export function toAuthFailure(reason: unknown): AuthFailure {
         "Authentication is not configured. Add the Supabase project URL and publishable key, then restart ProjectScout.",
     };
   }
-  if (message.includes("invalid login credentials")) {
+  if (
+    code === "invalid_credentials" ||
+    code === "email_not_confirmed" ||
+    code === "user_not_found" ||
+    message.includes("invalid login credentials") ||
+    message.includes("email not confirmed")
+  ) {
     return {
       kind: "credentials",
       message:
-        "The email address or password did not match. Check both fields and try again.",
+        "Login could not be completed. Check your email and password, or request a password reset.",
     };
   }
-  if (message.includes("email not confirmed")) {
-    return {
-      kind: "unverified",
-      message: "Confirm your email address before logging in.",
-    };
-  }
-  if (message.includes("rate") || message.includes("too many")) {
+  if (
+    code === "over_request_rate_limit" ||
+    code === "over_email_send_rate_limit" ||
+    message.includes("rate") ||
+    message.includes("too many")
+  ) {
     return {
       kind: "rate_limited",
       message:
         "Too many authentication attempts were made. Wait a moment, then try again.",
     };
   }
-  if (message.includes("weak password")) {
+  if (code === "weak_password" || message.includes("weak password")) {
     return {
       kind: "weak_password",
       message: "Use at least 8 characters with a letter, number, and symbol.",
@@ -56,7 +67,8 @@ export function toAuthFailure(reason: unknown): AuthFailure {
     message.includes("failed to fetch") ||
     message.includes("network request failed") ||
     message.includes("authretryablefetcherror") ||
-    message.includes("fetch failed")
+    message.includes("fetch failed") ||
+    code === "request_timeout"
   ) {
     return {
       kind: "unavailable",
@@ -82,4 +94,3 @@ export function reportAuthFailure(action: string, reason: unknown): void {
     : { message: String(reason) };
   console.error(`[auth:${action}] ${failure.kind}`, details);
 }
-

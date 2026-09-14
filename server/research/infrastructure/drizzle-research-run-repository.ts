@@ -1,12 +1,12 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import {
   getDatabase,
   type ProjectScoutDatabase,
-} from "@/server/database/client";
+} from "../../database/client";
 import {
   projectRecommendations,
   recommendationSources,
@@ -15,7 +15,7 @@ import {
   type ProjectRecommendationRow,
   type ResearchRunRow,
   type ResearchSourceRow,
-} from "@/server/database/schema";
+} from "../../database/schema";
 
 import type { ResearchReportWriter } from "../application/research-ports";
 import type { ResearchOwner } from "../domain/research-owner";
@@ -181,14 +181,17 @@ async function insertProjectRecommendations(
 }
 
 function ownershipCondition(owner: ResearchOwner) {
-  const sessionCondition = eq(
-    researchRuns.sessionId,
-    owner.sessionId.toString(),
-  );
+  if (owner.userId) {
+    return eq(researchRuns.userId, uuidSchema.parse(owner.userId));
+  }
 
-  return owner.userId
-    ? or(sessionCondition, eq(researchRuns.userId, owner.userId))
-    : sessionCondition;
+  return and(
+    eq(
+      researchRuns.sessionId,
+      uuidSchema.parse(owner.sessionId.toString()),
+    ),
+    isNull(researchRuns.userId),
+  );
 }
 
 export class DrizzleResearchRunRepository implements ResearchReportWriter {
@@ -327,7 +330,10 @@ export class DrizzleResearchRunRepository implements ResearchReportWriter {
         createdAt: researchRuns.createdAt,
       })
       .from(researchRuns)
-      .where(eq(researchRuns.sessionId, sessionId.toString()))
+      .where(and(
+        eq(researchRuns.sessionId, uuidSchema.parse(sessionId.toString())),
+        isNull(researchRuns.userId),
+      ))
       .orderBy(desc(researchRuns.createdAt))
       .limit(safeLimit);
 
@@ -344,10 +350,15 @@ export class DrizzleResearchRunRepository implements ResearchReportWriter {
     sessionId: ResearchOwner["sessionId"],
     userId: string,
   ): Promise<number> {
+    const validSessionId = uuidSchema.parse(sessionId.toString());
+    const validUserId = uuidSchema.parse(userId);
     const attached = await this.database
       .update(researchRuns)
-      .set({ userId: uuidSchema.parse(userId) })
-      .where(eq(researchRuns.sessionId, sessionId.toString()))
+      .set({ userId: validUserId })
+      .where(and(
+        eq(researchRuns.sessionId, validSessionId),
+        isNull(researchRuns.userId),
+      ))
       .returning({ id: researchRuns.id });
 
     return attached.length;

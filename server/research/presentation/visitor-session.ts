@@ -33,6 +33,13 @@ export function resolveVisitorSession(
     return existing;
   }
 
+  return rotateVisitorSession(cookieStore, secure);
+}
+
+export function rotateVisitorSession(
+  cookieStore: VisitorCookieStore,
+  secure: boolean,
+): VisitorSessionId {
   const generated = VisitorSessionId.generate();
   cookieStore.set(RESEARCH_VISITOR_COOKIE, generated.toString(), {
     httpOnly: true,
@@ -48,4 +55,9 @@ export function resolveVisitorSession(
 export async function getOrCreateVisitorSession(): Promise<VisitorSessionId> {
   const cookieStore = await cookies();
   return resolveVisitorSession(cookieStore, process.env.NODE_ENV === "production");
+}
+
+export async function rotateCurrentVisitorSession(): Promise<void> {
+  const cookieStore = await cookies();
+  rotateVisitorSession(cookieStore, process.env.NODE_ENV === "production");
 }

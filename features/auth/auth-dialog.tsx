@@ -193,10 +193,7 @@ export function AuthDialog() {
                 </p>
               </div>
             ) : (
-              <p>
-                A secure link was sent to <strong>{auth.noticeEmail}</strong>.
-                Open it in this browser to continue.
-              </p>
+              <p>{auth.checkEmailMessage}</p>
             )}
             <button className="button auth-dialog__submit" type="button" onClick={auth.closeAuth}>
               {auth.mode === "email-confirmed" ? "Continue to research" : "Close"}

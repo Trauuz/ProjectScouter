@@ -23,7 +23,7 @@ export type AuthContextValue = {
   ready: boolean;
   isOpen: boolean;
   mode: AuthMode;
-  noticeEmail: string;
+  checkEmailMessage: string;
   noticeMessage: string;
   openAuth: (mode?: AuthMode, intent?: NewPendingAuthIntent) => void;
   closeAuth: () => void;
@@ -36,6 +36,7 @@ export type AuthContextValue = {
   sendPasswordReset: (email: string) => Promise<AuthActionResult>;
   updatePassword: (password: string) => Promise<AuthActionResult>;
   signOut: () => Promise<AuthActionResult>;
+  deleteAccount: () => Promise<AuthActionResult>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
