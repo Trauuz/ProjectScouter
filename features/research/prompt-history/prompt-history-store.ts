@@ -95,9 +95,11 @@ function isResearchResponse(value: unknown): value is ResearchResponse {
   }
 
   const { report, persistence } = value;
-  const validPersistence = persistence.status === "failed" || (
-    persistence.status === "saved" && typeof persistence.runId === "string"
-  );
+  const validPersistence = persistence.status === "failed" ||
+    (persistence.status === "saved" && typeof persistence.runId === "string") ||
+    (persistence.status === "pending" &&
+      typeof persistence.retryId === "string" &&
+      typeof persistence.message === "string");
 
   return validPersistence &&
     typeof report.prompt === "string" &&

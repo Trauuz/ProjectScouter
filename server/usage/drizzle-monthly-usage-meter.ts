@@ -179,8 +179,9 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
     return {
       allowed: true,
       usage: monthlyUsage(accountUsed, now),
-      reservation: new UsageReservation((state) =>
-        this.transition(reservationId, state),
+      reservation: new UsageReservation(
+        reservationId,
+        (state) => this.transition(reservationId, state),
       ),
     };
   }

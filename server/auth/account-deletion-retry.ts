@@ -3,6 +3,7 @@ import {
   type AccountDeletionDependencies,
   type AccountDeletionStep,
 } from "./account-deletion-workflow";
+import { logger } from "../observability/structured-logger";
 
 export type AccountDeletionRetrySummary = {
   processed: number;
@@ -43,7 +44,17 @@ export async function retryAccountDeletions({
         step: result.nextStep,
         errorCode: result.lastErrorCode ?? "DELETION_RETRY_FAILED",
       });
-    } catch {
+    } catch (reason) {
+      logger.error("account_deletion.retry.failed", {
+        operation: job.nextStep,
+        userId: job.userId,
+        errorCategory: "deletion_failure",
+        retryStatus: "retryable",
+      }, reason);
+      logger.metric("deletion.failure.count", {
+        value: 1,
+        operation: job.nextStep,
+      });
       summary.failures.push({
         requestId: job.id,
         step: job.nextStep,

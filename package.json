@@ -4,8 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run validate:deployment",
     "build": "next build",
+    "postbuild": "npm run validate:client-bundle",
+    "prestart": "npm run validate:deployment",
     "start": "next start",
+    "validate:deployment": "node --conditions=react-server --import tsx scripts/validate-production-environment.ts",
+    "validate:client-bundle": "node scripts/check-client-bundle-secrets.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
@@ -35,6 +40,7 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4",
+    "tsx": "4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

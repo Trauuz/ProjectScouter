@@ -203,7 +203,7 @@ describe("createResearchPostHandler rate limiting", () => {
     expect(reservation.complete).not.toHaveBeenCalled();
   });
 
-  it("releases the reservation when persistence fails", async () => {
+  it("returns 202 and keeps the reservation pending while durable persistence is retryable", async () => {
     const reservation = {
       complete: vi.fn().mockResolvedValue(undefined),
       release: vi.fn().mockResolvedValue(undefined),
@@ -211,7 +211,11 @@ describe("createResearchPostHandler rate limiting", () => {
     const workflow: ResearchWorkflow = {
       execute: vi.fn().mockResolvedValue({
         ...successfulResult,
-        persistence: { status: "failed" as const },
+        persistence: {
+          status: "pending" as const,
+          retryId: "2a1a66b1-f065-4334-889e-935b40958580",
+          message: "Research is complete but still being saved. Retry saving without running the research again.",
+        },
       }),
     };
 
@@ -220,8 +224,8 @@ describe("createResearchPostHandler rate limiting", () => {
       usageMeterWith(reservation),
     )(researchRequest("198.51.100.10", "198.51.100.11"), authenticatedOwner());
 
-    expect(response.status).toBe(200);
-    expect(reservation.release).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(202);
+    expect(reservation.release).not.toHaveBeenCalled();
     expect(reservation.complete).not.toHaveBeenCalled();
   });
 });

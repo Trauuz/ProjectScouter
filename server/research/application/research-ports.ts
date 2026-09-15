@@ -27,14 +27,44 @@ export interface ResearchReportWriter {
   saveCompletedResearchRun(
     owner: ResearchOwner,
     report: ResearchReport,
+    runId?: string,
   ): Promise<string>;
 }
+
+export type StagedResearch = Readonly<{
+  id: string;
+  report: ResearchReport;
+}>;
+
+export interface ResearchPersistenceJobStore {
+  stageGenerated(
+    owner: ResearchOwner,
+    report: ResearchReport,
+    usageReservationId?: string,
+  ): Promise<StagedResearch>;
+  materialize(
+    retryId: string,
+    owner: ResearchOwner,
+  ): Promise<{ report: ResearchReport; runId: string }>;
+}
+
+export type ResearchExecutionContext = Readonly<{
+  usageReservationId?: string;
+}>;
 
 export interface ResearchWorkflow {
   execute(
     prompt: ResearchPrompt,
     owner: ResearchOwner,
     signal: AbortSignal,
+    context?: ResearchExecutionContext,
+  ): Promise<{
+    report: ResearchReport;
+    persistence: ResearchPersistenceStatus;
+  }>;
+  retry?(
+    retryId: string,
+    owner: ResearchOwner,
   ): Promise<{
     report: ResearchReport;
     persistence: ResearchPersistenceStatus;

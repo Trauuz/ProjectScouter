@@ -104,23 +104,38 @@ async function insertResearchRun(
   executor: DatabaseExecutor,
   owner: ResearchOwner,
   report: ResearchReport,
-): Promise<ResearchRunRow> {
-  const [run] = await executor
+  requestedRunId?: string,
+): Promise<{ run: ResearchRunRow; inserted: boolean }> {
+  const insert = executor
     .insert(researchRuns)
     .values({
+      ...(requestedRunId ? { id: uuidSchema.parse(requestedRunId) } : {}),
       sessionId: owner.sessionId.toString(),
       userId: owner.userId,
       prompt: report.prompt,
       summary: report.summary,
       generatedAt: requiredDate(report.generatedAt),
-    })
-    .returning();
+    });
+  const [run] = requestedRunId
+    ? await insert.onConflictDoNothing({ target: researchRuns.id }).returning()
+    : await insert.returning();
 
-  if (!run) {
-    throw new Error("The research run insert returned no record.");
+  if (run) {
+    return { run, inserted: true };
   }
 
-  return run;
+  const [existing] = await executor
+    .select()
+    .from(researchRuns)
+    .where(and(
+      eq(researchRuns.id, uuidSchema.parse(requestedRunId)),
+      ownershipCondition(owner),
+    ))
+    .limit(1);
+  if (!existing) {
+    throw new Error("The research run insert returned no owned record.");
+  }
+  return { run: existing, inserted: false };
 }
 
 async function insertResearchSources(
@@ -201,7 +216,7 @@ export class DrizzleResearchRunRepository implements ResearchReportWriter {
     owner: ResearchOwner,
     report: ResearchReport,
   ): Promise<ResearchRunRow> {
-    return insertResearchRun(this.database, owner, report);
+    return insertResearchRun(this.database, owner, report).then(({ run }) => run);
   }
 
   saveResearchSources(
@@ -227,9 +242,18 @@ export class DrizzleResearchRunRepository implements ResearchReportWriter {
   async saveCompletedResearchRun(
     owner: ResearchOwner,
     report: ResearchReport,
+    requestedRunId?: string,
   ): Promise<string> {
     return this.database.transaction(async (transaction) => {
-      const run = await insertResearchRun(transaction, owner, report);
+      const { run, inserted } = await insertResearchRun(
+        transaction,
+        owner,
+        report,
+        requestedRunId,
+      );
+      if (!inserted) {
+        return run.id;
+      }
       const sourcesByKey = await insertResearchSources(
         transaction,
         run.id,

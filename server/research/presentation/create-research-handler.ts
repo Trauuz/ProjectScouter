@@ -13,6 +13,7 @@ import type {
   MonthlyUsageMeter,
   UsageReservation,
 } from "@/server/usage/monthly-usage";
+import { logger } from "@/server/observability/structured-logger";
 
 const MAX_BODY_BYTES = 4_096;
 const REQUEST_TIMEOUT_MS = 85_000;
@@ -38,8 +39,22 @@ type ResearchDiagnostics = {
 
 const DEFAULT_DIAGNOSTICS: ResearchDiagnostics = {
   exposeDetails: process.env.NODE_ENV !== "production",
-  reportFailure: (reason) => console.error("[research-api] Request failed", reason),
+  reportFailure: (reason) => logger.error("research.request.failed", {
+    operation: "run_research",
+    errorCategory: reason instanceof ResearchFailure
+      ? reason.code.toLowerCase()
+      : "request_failure",
+    retryStatus: "retryable",
+  }, reason),
 };
+
+function recordUsageDenial(reason: string, provider?: string): void {
+  logger.metric("usage.denial.count", {
+    value: 1,
+    errorCategory: reason,
+    ...(provider ? { provider } : {}),
+  });
+}
 
 function errorResponse(
   status: number,
@@ -116,6 +131,7 @@ function failureResponse(
     NO_EVIDENCE: [422, "No usable public evidence was found.", false],
     UPSTREAM_FAILED: [502, "A research provider could not complete the request.", true],
     UPSTREAM_TIMEOUT: [504, "Research took too long. Please try again.", true],
+    PERSISTENCE_UNAVAILABLE: [503, "Research was generated but could not be saved safely. Please try again.", true],
     SERVER_MISCONFIGURED: [500, "The research service is not configured.", false],
   } as const;
   const [status, message, retryable] = responses[failure.code];
@@ -193,6 +209,7 @@ export function createResearchPostHandler({
 
     const limit = rateLimiter.check(rateLimitKey(owner));
     if (!limit.allowed) {
+      recordUsageDenial("rate_limit");
       return errorResponse(
         429,
         "RATE_LIMITED",
@@ -221,6 +238,7 @@ export function createResearchPostHandler({
         }
         if (!reservation.allowed) {
           if (reservation.denialReason === "google-ai") {
+            recordUsageDenial("application_limit", "gemini");
             return errorResponse(
               429,
               "FREE_TIER_CAPACITY_REACHED",
@@ -229,6 +247,7 @@ export function createResearchPostHandler({
             );
           }
           if (reservation.denialReason === "tavily") {
+            recordUsageDenial("application_limit", "tavily");
             return errorResponse(
               429,
               "FREE_TIER_CAPACITY_REACHED",
@@ -236,6 +255,7 @@ export function createResearchPostHandler({
               false,
             );
           }
+          recordUsageDenial("account_limit");
           return errorResponse(
             429,
             "MONTHLY_USAGE_EXCEEDED",
@@ -249,15 +269,18 @@ export function createResearchPostHandler({
         request.signal,
         AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       ]);
-      const result = await workflow.execute(prompt, owner, signal);
+      const result = await workflow.execute(prompt, owner, signal, {
+        usageReservationId: usageReservation?.id,
+      });
 
-      if (result.persistence.status === "failed") {
-        await usageReservation?.release();
-      } else {
+      if (result.persistence.status === "saved") {
         await usageReservation?.complete();
       }
 
-      return Response.json(result, { headers: RESPONSE_HEADERS });
+      return Response.json(result, {
+        status: result.persistence.status === "pending" ? 202 : 200,
+        headers: RESPONSE_HEADERS,
+      });
     } catch (reason) {
       try {
         await usageReservation?.release();

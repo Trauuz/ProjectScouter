@@ -122,8 +122,21 @@ function isSuccessResponse(payload: unknown): payload is ResearchResponse {
     return false;
   }
 
-  const report = (payload as { report?: unknown }).report;
+  const response = payload as { report?: unknown; persistence?: unknown };
+  const report = response.report;
+  const persistence = response.persistence;
+  const validPersistence = Boolean(
+    persistence &&
+    typeof persistence === "object" &&
+    ((Object.hasOwn(persistence, "status") &&
+      (persistence as { status?: unknown }).status === "saved" &&
+      typeof (persistence as { runId?: unknown }).runId === "string") ||
+      ((persistence as { status?: unknown }).status === "pending" &&
+        typeof (persistence as { retryId?: unknown }).retryId === "string" &&
+        typeof (persistence as { message?: unknown }).message === "string")),
+  );
   return Boolean(
+    validPersistence &&
     report &&
     typeof report === "object" &&
     Object.hasOwn(report, "prompt") &&
@@ -501,6 +514,8 @@ export function ResearchWorkspace({
   const [deleteTarget, setDeleteTarget] = useState<PromptHistoryEntry | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [savingRetry, setSavingRetry] = useState(false);
+  const [saveRetryError, setSaveRetryError] = useState("");
   const [composerMultiline, setComposerMultiline] = useState(false);
   const {
     entries: promptHistory,
@@ -529,6 +544,8 @@ export function ResearchWorkspace({
       setDeleteTarget(null);
       setDeleteError("");
       setDeleting(false);
+      setSavingRetry(false);
+      setSaveRetryError("");
     });
   }, []);
   const resumeStartedRef = useRef<string | null>(null);
@@ -728,9 +745,7 @@ export function ResearchWorkspace({
 
       const completedResearch: ResearchResponse = {
         report: payload.report,
-        persistence: payload.persistence ?? {
-          status: "failed",
-        },
+        persistence: payload.persistence,
       };
       setActiveResearchId(rememberCompletedResearch(completedResearch));
       setState({
@@ -751,6 +766,42 @@ export function ResearchWorkspace({
       });
     }
   }, [auth, rememberCompletedResearch, rememberPrompt]);
+
+  const retryPersistence = useCallback(async (retryId: string) => {
+    setSavingRetry(true);
+    setSaveRetryError("");
+    try {
+      const response = await fetch(
+        `/api/research/persistence/${encodeURIComponent(retryId)}`,
+        { method: "POST" },
+      );
+      const payload = await parseResearchResponse(response);
+      if (!response.ok) {
+        const error = isErrorResponse(payload) ? payload.error : null;
+        setSaveRetryError(
+          error?.message || "This report could not be saved yet. Please retry.",
+        );
+        return;
+      }
+      if (!isSuccessResponse(payload)) {
+        throw new UnexpectedResearchResponse(
+          response.status,
+          response.headers.get("content-type") ?? "unknown",
+        );
+      }
+      setActiveResearchId(rememberCompletedResearch(payload));
+      setState({
+        status: "success",
+        report: payload.report,
+        persistence: payload.persistence,
+      });
+    } catch (reason) {
+      reportClientFailure(reason);
+      setSaveRetryError("This report could not be saved yet. Please retry.");
+    } finally {
+      setSavingRetry(false);
+    }
+  }, [rememberCompletedResearch]);
 
   useEffect(() => {
     if (!auth.ready || auth.user || directGateOpenedRef.current) {
@@ -898,6 +949,10 @@ export function ResearchWorkspace({
   const activeEntry = promptHistory.find(
     (entry) => entry.id === activeResearchId,
   ) ?? null;
+  const pendingPersistence =
+    state.status === "success" && state.persistence.status === "pending"
+      ? state.persistence
+      : null;
   const submitLabel = researchSubmitLabel(state.status);
 
   return (
@@ -1078,13 +1133,26 @@ export function ResearchWorkspace({
               </div>
             ) : null}
             {state.status === "success" &&
-            state.persistence.status === "failed" ? (
+            (state.persistence.status === "failed" ||
+              state.persistence.status === "pending") ? (
               <div className="research-status__notice" role="status">
                 <span>Research complete</span>
                 <p>
-                  This report is ready, but it could not be saved. Keep this
-                  page open if you need to refer back to it.
+                  {state.persistence.status === "pending"
+                    ? state.persistence.message
+                    : "This older report was not saved to your account."}
                 </p>
+                {pendingPersistence ? (
+                  <button
+                    className="button"
+                    type="button"
+                    disabled={savingRetry}
+                    onClick={() => void retryPersistence(pendingPersistence.retryId)}
+                  >
+                    {savingRetry ? "Saving…" : "Retry saving"}
+                  </button>
+                ) : null}
+                {saveRetryError ? <p>{saveRetryError}</p> : null}
               </div>
             ) : null}
           </div>

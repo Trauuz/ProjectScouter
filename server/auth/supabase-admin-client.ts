@@ -2,13 +2,10 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-export function createSupabaseAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+import { readSupabaseAdminEnvironment } from "./supabase-admin-environment";
 
-  if (!url || !serviceRoleKey) {
-    throw new Error("SUPABASE_ADMIN_NOT_CONFIGURED");
-  }
+export function createSupabaseAdminClient() {
+  const { url, serviceRoleKey } = readSupabaseAdminEnvironment();
 
   return createClient(url, serviceRoleKey, {
     auth: {

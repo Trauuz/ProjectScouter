@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ResearchReport } from "../research/domain/research-report";
 
 export const projectScoutSchema = pgSchema("projectscout");
 
@@ -28,6 +29,11 @@ export const evidenceStrengthEnum = projectScoutSchema.enum(
 export const usageReservationStatusEnum = projectScoutSchema.enum(
   "usage_reservation_status",
   ["pending", "completed", "released"],
+);
+
+export const researchPersistenceJobStatusEnum = projectScoutSchema.enum(
+  "research_persistence_job_status",
+  ["pending", "retryable_failed", "completed"],
 );
 
 export const accountDeletionStatusEnum = projectScoutSchema.enum(
@@ -270,6 +276,40 @@ export const recommendationSources = projectScoutSchema.table(
   (table) => [
     primaryKey({ columns: [table.recommendationId, table.sourceId] }),
     index("recommendation_sources_source_idx").on(table.sourceId),
+  ],
+);
+
+export const researchPersistenceJobs = projectScoutSchema.table(
+  "research_persistence_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id").notNull(),
+    userId: uuid("user_id"),
+    usageReservationId: uuid("usage_reservation_id").references(
+      () => usageReservations.id,
+      { onDelete: "set null" },
+    ),
+    report: jsonb("report").$type<ResearchReport>().notNull(),
+    status: researchPersistenceJobStatusEnum("status")
+      .default("pending")
+      .notNull(),
+    attemptCount: integer("attempt_count").default(0).notNull(),
+    lastErrorCode: text("last_error_code"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true, mode: "date" }),
+  },
+  (table) => [
+    uniqueIndex("research_persistence_jobs_usage_reservation_uidx")
+      .on(table.usageReservationId),
+    index("research_persistence_jobs_status_updated_idx")
+      .on(table.status, table.updatedAt),
+    index("research_persistence_jobs_user_idx").on(table.userId),
+    index("research_persistence_jobs_session_idx").on(table.sessionId),
   ],
 );
 

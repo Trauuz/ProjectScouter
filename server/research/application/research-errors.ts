@@ -2,6 +2,7 @@ export type ResearchFailureCode =
   | "NO_EVIDENCE"
   | "UPSTREAM_FAILED"
   | "UPSTREAM_TIMEOUT"
+  | "PERSISTENCE_UNAVAILABLE"
   | "SERVER_MISCONFIGURED";
 
 export class ResearchFailure extends Error {

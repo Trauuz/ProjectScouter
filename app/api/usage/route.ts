@@ -1,5 +1,7 @@
 import { getActiveAuthIdentity } from "@/server/auth/get-auth-identity";
 import { getMonthlyUsageMeter } from "@/server/usage/drizzle-monthly-usage-meter";
+import { observeRoute } from "@/server/observability/observe-route";
+import { setObservedUser } from "@/server/observability/structured-logger";
 
 export const runtime = "nodejs";
 
@@ -8,7 +10,7 @@ const RESPONSE_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 };
 
-export async function GET(): Promise<Response> {
+async function getUsage(): Promise<Response> {
   const identity = await getActiveAuthIdentity();
   if (!identity) {
     return Response.json(
@@ -17,6 +19,9 @@ export async function GET(): Promise<Response> {
     );
   }
 
+  setObservedUser(identity.id);
   const usage = await getMonthlyUsageMeter().read(identity.id);
   return Response.json(usage, { headers: RESPONSE_HEADERS });
 }
+
+export const GET = observeRoute("/api/usage", () => getUsage());

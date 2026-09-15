@@ -7,6 +7,8 @@ import {
   getOrCreateVisitorSession,
   rotateCurrentVisitorSession,
 } from "@/server/research/presentation/visitor-session";
+import { observeRoute } from "@/server/observability/observe-route";
+import { logger, setObservedUser } from "@/server/observability/structured-logger";
 
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "email",
@@ -23,11 +25,16 @@ async function attachAnonymousRuns(userId: string): Promise<void> {
     await getResearchRunRepository().attachResearchRunsToUser(sessionId, userId);
     await rotateCurrentVisitorSession();
   } catch (reason) {
-    console.error("[auth-confirm] Could not attach anonymous research runs", reason);
+    logger.error("auth.confirm_claim.failed", {
+      operation: "confirm_auth_and_claim_research",
+      userId,
+      errorCategory: "persistence_failure",
+      retryStatus: "retryable",
+    }, reason);
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function confirmAuth(request: NextRequest): Promise<NextResponse> {
   const supabase = await createSupabaseServerClient();
   const failureUrl = new URL("/?auth=confirmation-error", request.url);
   if (!supabase) {
@@ -52,12 +59,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       type: typeValue as EmailOtpType,
     });
     if (error) {
+      logger.warn("auth.confirm.failed", {
+        operation: "verify_otp",
+        provider: "supabase",
+        errorCategory: "authentication_failure",
+        retryStatus: "retryable",
+      });
       return NextResponse.redirect(failureUrl);
     }
     userId = data.user?.id;
   } else if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
+      logger.warn("auth.confirm.failed", {
+        operation: "exchange_code",
+        provider: "supabase",
+        errorCategory: "authentication_failure",
+        retryStatus: "retryable",
+      });
       return NextResponse.redirect(failureUrl);
     }
     userId = data.user?.id;
@@ -66,6 +85,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   if (userId) {
+    setObservedUser(userId);
     await attachAnonymousRuns(userId);
   }
 
@@ -74,3 +94,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     : "/research?auth=confirmed";
   return NextResponse.redirect(new URL(destination, request.url));
 }
+
+export const GET = observeRoute(
+  "/auth/confirm",
+  (request) => confirmAuth(request as NextRequest),
+);

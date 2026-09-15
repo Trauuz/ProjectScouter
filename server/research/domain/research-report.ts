@@ -48,6 +48,12 @@ export type ResearchResponse = {
 
 export type ResearchPersistenceStatus =
   | { status: "saved"; runId: string }
+  | {
+      status: "pending";
+      retryId: string;
+      message: string;
+    }
+  // Read support for browser history written by older releases.
   | { status: "failed" };
 
 export type ResearchApiErrorCode =
@@ -61,6 +67,7 @@ export type ResearchApiErrorCode =
   | "MONTHLY_USAGE_EXCEEDED"
   | "FREE_TIER_CAPACITY_REACHED"
   | "USAGE_UNAVAILABLE"
+  | "PERSISTENCE_UNAVAILABLE"
   | "NO_EVIDENCE"
   | "UPSTREAM_FAILED"
   | "UPSTREAM_TIMEOUT"

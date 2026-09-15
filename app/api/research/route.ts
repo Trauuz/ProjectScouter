@@ -3,10 +3,12 @@ import { ResearchFailure } from "@/server/research/application/research-errors";
 import { getResearchPostHandler } from "@/server/research/composition-root";
 import type { ResearchErrorResponse } from "@/server/research/domain/research-report";
 import { getOrCreateVisitorSession } from "@/server/research/presentation/visitor-session";
+import { observeRoute } from "@/server/observability/observe-route";
+import { setObservedUser } from "@/server/observability/structured-logger";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request): Promise<Response> {
+async function postResearch(request: Request): Promise<Response> {
   try {
     const identity = await getOptionalAuthIdentity();
     if (!identity) {
@@ -27,6 +29,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const sessionId = await getOrCreateVisitorSession();
+    setObservedUser(identity.id);
     return await getResearchPostHandler()(request, {
       sessionId,
       userId: identity.id,
@@ -54,3 +57,5 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 }
+
+export const POST = observeRoute("/api/research", postResearch);

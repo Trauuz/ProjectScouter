@@ -34,7 +34,10 @@ type ReservationTransition = (
 export class UsageReservation {
   private transitionPromise: Promise<void> | undefined;
 
-  constructor(private readonly transition: ReservationTransition) {}
+  constructor(
+    readonly id: string,
+    private readonly transition: ReservationTransition,
+  ) {}
 
   complete(): Promise<void> {
     return this.finish("completed");

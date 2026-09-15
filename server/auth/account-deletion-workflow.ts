@@ -1,3 +1,5 @@
+import { logger } from "../observability/structured-logger";
+
 export type AccountDeletionStatus =
   | "pending"
   | "retryable_failed"
@@ -90,14 +92,31 @@ export async function processAccountDeletion(
     const failedStep = job.nextStep;
     try {
       job = await runCurrentStep(job, dependencies);
-    } catch {
+    } catch (reason) {
+      logger.error("account_deletion.step.failed", {
+        operation: failedStep,
+        userId: job.userId,
+        errorCategory: "deletion_failure",
+        retryStatus: "retryable",
+      }, reason);
+      logger.metric("deletion.failure.count", {
+        value: 1,
+        operation: failedStep,
+      });
       try {
         return await dependencies.repository.markRetryableFailure(
           job.id,
           failedStep,
           ERROR_CODES[failedStep],
         );
-      } catch {
+      } catch (stateReason) {
+        logger.error("account_deletion.state_record.failed", {
+          operation: failedStep,
+          userId: job.userId,
+          errorCategory: "database_error",
+          retryStatus: "retryable",
+        }, stateReason);
+        logger.metric("deletion.failure.count", { value: 1, operation: failedStep });
         return {
           ...job,
           status: "retryable_failed",

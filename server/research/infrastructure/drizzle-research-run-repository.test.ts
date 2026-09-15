@@ -139,6 +139,68 @@ class AnonymousListDatabase {
   }
 }
 
+class ConcurrentPersistenceDatabase {
+  activeTransactions = 0;
+  peakActiveTransactions = 0;
+  readonly rows = new Map<string, Record<string, unknown>>();
+
+  async transaction<T>(work: (transaction: this) => Promise<T>): Promise<T> {
+    this.activeTransactions += 1;
+    this.peakActiveTransactions = Math.max(
+      this.peakActiveTransactions,
+      this.activeTransactions,
+    );
+    try {
+      return await work(this);
+    } finally {
+      this.activeTransactions -= 1;
+    }
+  }
+
+  insert(table: unknown) {
+    if (table !== researchRuns) {
+      throw new Error("The empty load-test report should only insert a run.");
+    }
+
+    return {
+      values: (values: Record<string, unknown>) => {
+        const returning = async (ignoreConflict = false) => {
+          const id = typeof values.id === "string"
+            ? values.id
+            : crypto.randomUUID();
+          if (ignoreConflict && this.rows.has(id)) {
+            return [];
+          }
+          const row = {
+            id,
+            ...values,
+            createdAt: new Date(),
+          };
+          this.rows.set(id, row);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return [row];
+        };
+        return {
+          returning: () => returning(),
+          onConflictDoNothing: () => ({
+            returning: () => returning(true),
+          }),
+        };
+      },
+    };
+  }
+
+  select() {
+    return {
+      from: () => ({
+        where: () => ({
+          limit: async () => [...this.rows.values()].slice(0, 1),
+        }),
+      }),
+    };
+  }
+}
+
 function owner(sessionId: string, userId: string | null): ResearchOwner {
   return { sessionId: VisitorSessionId.create(sessionId), userId };
 }
@@ -289,5 +351,57 @@ describe("DrizzleResearchRunRepository research authorization", () => {
     );
 
     expect(runs.map((run) => run.id)).toEqual(["anonymous"]);
+  });
+});
+
+describe("DrizzleResearchRunRepository persistence concurrency", () => {
+  it("persists independent completed runs concurrently", async () => {
+    const database = new ConcurrentPersistenceDatabase();
+    const repository = new DrizzleResearchRunRepository(database as never);
+    const report = {
+      prompt: "Concurrent project research",
+      summary: "A load-test fixture.",
+      generatedAt: "2026-09-15T00:00:00.000Z",
+      sources: [],
+      recommendations: [],
+    };
+
+    const runIds = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        repository.saveCompletedResearchRun(
+          owner(SESSION_ID, USER_A_ID),
+          report,
+        ),
+      ),
+    );
+
+    expect(new Set(runIds)).toHaveLength(8);
+    expect(database.peakActiveTransactions).toBeGreaterThan(1);
+  });
+
+  it("materializes the same retry job once under concurrent retries", async () => {
+    const database = new ConcurrentPersistenceDatabase();
+    const repository = new DrizzleResearchRunRepository(database as never);
+    const runId = "2a1a66b1-f065-4334-889e-935b40958580";
+    const report = {
+      prompt: "Concurrent retry research",
+      summary: "A retry fixture.",
+      generatedAt: "2026-09-15T00:00:00.000Z",
+      sources: [],
+      recommendations: [],
+    };
+
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        repository.saveCompletedResearchRun(
+          owner(SESSION_ID, USER_A_ID),
+          report,
+          runId,
+        ),
+      ),
+    );
+
+    expect(new Set(results)).toEqual(new Set([runId]));
+    expect(database.rows.size).toBe(1);
   });
 });
