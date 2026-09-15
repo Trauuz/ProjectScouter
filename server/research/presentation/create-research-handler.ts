@@ -13,7 +13,7 @@ import type {
   MonthlyUsageMeter,
   UsageReservation,
 } from "@/server/usage/monthly-usage";
-import { logger } from "@/server/observability/structured-logger";
+import { logger } from "../../observability/structured-logger";
 
 const MAX_BODY_BYTES = 4_096;
 const REQUEST_TIMEOUT_MS = 85_000;

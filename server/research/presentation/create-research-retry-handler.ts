@@ -2,7 +2,7 @@ import { ResearchFailure } from "../application/research-errors";
 import type { ResearchWorkflow } from "../application/research-ports";
 import type { ResearchOwner } from "../domain/research-owner";
 import type { ResearchErrorResponse } from "../domain/research-report";
-import { logger } from "@/server/observability/structured-logger";
+import { logger } from "../../observability/structured-logger";
 
 type RetryFailureEvent = Readonly<{
   event: "research.persistence.retry_request_failed";
@@ -33,7 +33,6 @@ export function createResearchPersistenceRetryHandler({
       persistenceStatus: "pending",
       errorType: event.errorType,
     });
-    logger.metric("persistence.failure.count", { value: 1 });
   },
 }: Dependencies) {
   return async (retryId: string, owner: ResearchOwner): Promise<Response> => {

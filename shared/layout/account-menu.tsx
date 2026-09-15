@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import type { AuthIdentity } from "@/shared/auth/auth-identity";
+import {
+  type MonthlyUsage,
+  type UsageDialogState,
+  usageDialogPresentation,
+} from "./usage-dialog-state";
 
 const BUG_REPORT_URL = "https://github.com/Trauuz/ProjectScouter/issues/new";
 const BUG_REPORT_MAX_LENGTH = 2000;
@@ -22,22 +27,6 @@ type AccountMenuPanelProps = AccountMenuProps & {
   active?: boolean;
   onRequestClose?(): void;
 };
-
-type MonthlyUsage = {
-  limit: number;
-  used: number;
-  remaining: number;
-  periodStart: string;
-  resetsAt: string;
-};
-
-function resetDateLabel(resetsAt: string): string {
-  return new Intl.DateTimeFormat("en", {
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(resetsAt));
-}
 
 type MenuIconName =
   | "back"
@@ -145,8 +134,45 @@ function UsageDialog({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backdropPointerDownRef = useRef(false);
-  const [usage, setUsage] = useState<MonthlyUsage | null>(null);
-  const [usageError, setUsageError] = useState("");
+  const usageRequestRef = useRef(0);
+  const usageAbortRef = useRef<AbortController | null>(null);
+  const [usageState, setUsageState] = useState<UsageDialogState>({
+    status: "loading",
+  });
+  const presentation = usageDialogPresentation(usageState);
+
+  const loadUsage = useCallback(() => {
+    const requestNumber = usageRequestRef.current + 1;
+    usageRequestRef.current = requestNumber;
+    usageAbortRef.current?.abort();
+    const controller = new AbortController();
+    usageAbortRef.current = controller;
+    setUsageState({ status: "loading" });
+
+    void fetch("/api/usage", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("USAGE_UNAVAILABLE");
+        }
+        return response.json() as Promise<MonthlyUsage>;
+      })
+      .then((usage) => {
+        if (usageRequestRef.current === requestNumber) {
+          setUsageState({ status: "ready", usage });
+        }
+      })
+      .catch((reason: unknown) => {
+        if (
+          usageRequestRef.current === requestNumber &&
+          !(reason instanceof DOMException && reason.name === "AbortError")
+        ) {
+          setUsageState({ status: "error" });
+        }
+      });
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -165,30 +191,12 @@ function UsageDialog({
     if (!open) {
       return;
     }
-
-    const controller = new AbortController();
-    void fetch("/api/usage", {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Usage could not be loaded.");
-        }
-        return response.json() as Promise<MonthlyUsage>;
-      })
-      .then((nextUsage) => {
-        setUsageError("");
-        setUsage(nextUsage);
-      })
-      .catch((reason: unknown) => {
-        if (!(reason instanceof DOMException && reason.name === "AbortError")) {
-          setUsageError("Usage is temporarily unavailable.");
-        }
-      });
-
-    return () => controller.abort();
-  }, [open]);
+    const loadTimer = window.setTimeout(loadUsage, 0);
+    return () => {
+      window.clearTimeout(loadTimer);
+      usageAbortRef.current?.abort();
+    };
+  }, [loadUsage, open]);
 
   useEffect(() => {
     if (!open) {
@@ -233,24 +241,31 @@ function UsageDialog({
           <p>Account usage</p>
           <h2 id={titleId}>Usage</h2>
         </div>
-        <div className="usage-dialog__balance" role="status">
+        <div
+          className="usage-dialog__balance"
+          data-state={presentation.state}
+          role="status"
+          aria-live="polite"
+        >
           <span>Monthly research credits</span>
-          <strong>
-            {usageError
-              ? "Unavailable"
-              : usage
-                ? `${usage.remaining} of ${usage.limit}`
-                : "Loading…"}
-          </strong>
+          <strong>{presentation.balance}</strong>
         </div>
-        <p className="usage-dialog__note">
-          {usageError || (usage
-            ? `One credit runs one public-evidence search and one AI comparison. Resets ${resetDateLabel(usage.resetsAt)} at 00:00 UTC.`
-            : "Loading this month’s usage.")}
+        <p
+          className="usage-dialog__note"
+          role={presentation.state === "error" ? "alert" : undefined}
+        >
+          {presentation.note}
         </p>
-        <button className="button usage-dialog__close" type="button" onClick={onClose}>
-          Close
-        </button>
+        <div className="usage-dialog__actions">
+          {presentation.showRetry ? (
+            <button className="button" type="button" onClick={loadUsage}>
+              Try again
+            </button>
+          ) : null}
+          <button className="button usage-dialog__close" type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
       </div>
     </dialog>
   );
@@ -565,9 +580,11 @@ export function AccountMenuPanel({
   const [signOutError, setSignOutError] = useState("");
 
   useEffect(() => {
-    if (!active) {
-      setMenuView("root");
+    if (active) {
+      return;
     }
+    const resetTimer = window.setTimeout(() => setMenuView("root"), 0);
+    return () => window.clearTimeout(resetTimer);
   }, [active]);
 
   function closeMenu() {

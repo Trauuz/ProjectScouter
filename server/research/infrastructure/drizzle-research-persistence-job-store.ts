@@ -15,7 +15,7 @@ import type {
 import type { ResearchOwner } from "../domain/research-owner";
 import type { ResearchReport } from "../domain/research-report";
 import { DrizzleResearchRunRepository } from "./drizzle-research-run-repository";
-import { logger } from "@/server/observability/structured-logger";
+import { logger } from "../../observability/structured-logger";
 
 const uuidSchema = z.string().uuid();
 
@@ -42,7 +42,6 @@ function defaultReporter(event: PersistenceJobEvent): void {
       persistenceStatus: "pending",
       errorType: event.errorType,
     });
-    logger.metric("persistence.failure.count", { value: 1 });
     return;
   }
   logger.info(event.event, {

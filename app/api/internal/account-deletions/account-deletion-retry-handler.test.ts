@@ -49,4 +49,18 @@ describe("POST /api/internal/account-deletions", () => {
       }],
     });
   });
+
+  it("returns a controlled retryable failure without leaking internals", async () => {
+    const reportFailure = vi.fn();
+    const response = await createAccountDeletionRetryHandler({
+      expectedSecret: "correct-secret",
+      retry: vi.fn().mockRejectedValue(new Error("database password leaked here")),
+      reportFailure,
+    })(request());
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "DELETION_RETRY_UNAVAILABLE" });
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(reportFailure).toHaveBeenCalledOnce();
+  });
 });

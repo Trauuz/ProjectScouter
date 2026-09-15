@@ -78,6 +78,133 @@ function handlerWith(
 }
 
 describe("createResearchPostHandler rate limiting", () => {
+  it("rejects non-JSON requests before executing research", async () => {
+    const workflow: ResearchWorkflow = { execute: vi.fn() };
+    const handler = createResearchPostHandler({
+      workflow,
+      rateLimiter: new MemoryRateLimiter({ maxRequests: 1, windowMs: 60_000 }),
+    });
+    const response = await handler(new Request("https://projectscout.test/api/research", {
+      method: "POST",
+      body: "plain text",
+    }), authenticatedOwner());
+
+    expect(response.status).toBe(415);
+    expect((await response.json()).error.code).toBe("INVALID_CONTENT_TYPE");
+    expect(workflow.execute).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-origin browser requests", async () => {
+    const workflow: ResearchWorkflow = { execute: vi.fn() };
+    const handler = createResearchPostHandler({
+      workflow,
+      rateLimiter: new MemoryRateLimiter({ maxRequests: 1, windowMs: 60_000 }),
+    });
+    const request = researchRequest("198.51.100.10", "198.51.100.11");
+    request.headers.set("origin", "https://attacker.example");
+
+    const response = await handler(request, authenticatedOwner());
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error.code).toBe("FORBIDDEN_ORIGIN");
+    expect(workflow.execute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["malformed JSON", "{", 400, "INVALID_PROMPT"],
+    ["too short a prompt", JSON.stringify({ prompt: "short" }), 400, "INVALID_PROMPT"],
+    ["an oversized body", JSON.stringify({ prompt: "x".repeat(4_100) }), 413, "PAYLOAD_TOO_LARGE"],
+  ])("rejects %s", async (_label, body, status, code) => {
+    const workflow: ResearchWorkflow = { execute: vi.fn() };
+    const handler = createResearchPostHandler({
+      workflow,
+      rateLimiter: new MemoryRateLimiter({ maxRequests: 10, windowMs: 60_000 }),
+    });
+    const response = await handler(new Request("https://projectscout.test/api/research", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    }), authenticatedOwner());
+
+    expect(response.status).toBe(status);
+    expect((await response.json()).error.code).toBe(code);
+    expect(workflow.execute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["account", "MONTHLY_USAGE_EXCEEDED"],
+    ["google-ai", "FREE_TIER_CAPACITY_REACHED"],
+    ["tavily", "FREE_TIER_CAPACITY_REACHED"],
+  ] as const)("returns a stable denial for the %s usage limit", async (denialReason, code) => {
+    const workflow: ResearchWorkflow = { execute: vi.fn() };
+    const usageMeter = {
+      reserve: vi.fn().mockResolvedValue({
+        allowed: false,
+        denialReason,
+        usage: {
+          limit: 5,
+          used: 5,
+          remaining: 0,
+          periodStart: "2026-09-01",
+          resetsAt: "2026-10-01T00:00:00.000Z",
+        },
+      }),
+    };
+
+    const response = await handlerWith(workflow, usageMeter)(
+      researchRequest("198.51.100.10", "198.51.100.11"),
+      authenticatedOwner(),
+    );
+
+    expect(response.status).toBe(429);
+    expect((await response.json()).error.code).toBe(code);
+    expect(workflow.execute).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable service response when usage cannot be reserved", async () => {
+    const workflow: ResearchWorkflow = { execute: vi.fn() };
+    const reportFailure = vi.fn();
+    const handler = createResearchPostHandler({
+      workflow,
+      usageMeter: { reserve: vi.fn().mockRejectedValue(new Error("database unavailable")) } as never,
+      rateLimiter: new MemoryRateLimiter({ maxRequests: 10, windowMs: 60_000 }),
+      diagnostics: { exposeDetails: false, reportFailure },
+    });
+
+    const response = await handler(
+      researchRequest("198.51.100.10", "198.51.100.11"),
+      authenticatedOwner(),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: {
+      code: "USAGE_UNAVAILABLE",
+      message: "Usage could not be verified. Please try again.",
+      retryable: true,
+    } });
+    expect(reportFailure).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ["NO_EVIDENCE", 422],
+    ["PERSISTENCE_UNAVAILABLE", 503],
+    ["SERVER_MISCONFIGURED", 500],
+  ] as const)("maps %s failures to HTTP %s", async (failureCode, status) => {
+    const workflow: ResearchWorkflow = {
+      execute: vi.fn().mockRejectedValue(new ResearchFailure(failureCode, "internal detail")),
+    };
+    const response = await handlerWith(workflow, usageMeterWith({
+      complete: vi.fn(),
+      release: vi.fn().mockResolvedValue(undefined),
+    }))(
+      researchRequest("198.51.100.10", "198.51.100.11"),
+      authenticatedOwner(),
+    );
+
+    expect(response.status).toBe(status);
+    expect((await response.json()).error).not.toHaveProperty("details");
+  });
+
   it("blocks research before reserving usage while account deletion is pending", async () => {
     const workflow: ResearchWorkflow = {
       execute: vi.fn().mockResolvedValue(successfulResult),

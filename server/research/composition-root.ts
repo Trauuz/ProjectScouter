@@ -13,7 +13,7 @@ import { canRunResearch } from "@/server/auth/account-deletion-service";
 import {
   observeRecommendationProvider,
   observeResearchProvider,
-} from "@/server/observability/observed-providers";
+} from "../observability/observed-providers";
 
 type ResearchPostHandler = ReturnType<typeof createResearchPostHandler>;
 

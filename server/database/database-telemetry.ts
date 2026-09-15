@@ -126,7 +126,7 @@ export function instrumentDatabaseTransactions(
   telemetry: DatabaseTelemetry,
 ): ProjectScoutDatabase {
   return new Proxy(database, {
-    get(target, property, receiver) {
+    get(target, property) {
       if (property !== "transaction") {
         const value = Reflect.get(target, property, target);
         return typeof value === "function" ? value.bind(target) : value;

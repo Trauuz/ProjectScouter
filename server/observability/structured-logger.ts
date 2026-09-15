@@ -1,5 +1,3 @@
-import "server-only";
-
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 
@@ -105,14 +103,15 @@ export class StructuredLogger {
 
   private write(level: LogLevel, event: string, fields: LogFields): void {
     const context = contextStorage.getStore();
+    const safeFields = sanitizedFields(fields);
     this.sink(JSON.stringify({
+      ...safeFields,
       timestamp: new Date().toISOString(),
       level,
       event,
       requestId: context?.requestId ?? "system",
       route: context?.route ?? "background",
       ...(context?.userHash ? { userHash: context.userHash } : {}),
-      ...sanitizedFields(fields),
     }));
   }
 }

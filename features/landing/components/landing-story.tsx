@@ -301,7 +301,7 @@ export function LandingStory() {
             <span className={styles.eyebrow}>Illustrative research topic</span>
             <h3>Student Fitness Apps</h3>
           </div>
-          <svg aria-hidden="true" focusable="false" className="dir-svg" width="300" height="60" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none" style={{ overflow: "visible" }}>
+          <svg aria-hidden="true" focusable="false" className={`${styles.directionsConnector} dir-svg`} width="300" height="60" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none">
             <path d="M150 0 C 150 30, 50 30, 50 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />
             <path d="M150 0 L 150 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />
             <path d="M150 0 C 150 30, 250 30, 250 60" stroke="var(--color-rule)" strokeWidth="2" fill="none" />

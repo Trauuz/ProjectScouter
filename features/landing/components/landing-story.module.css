@@ -187,6 +187,10 @@
   justify-items: center;
 }
 
+.directionsConnector {
+  overflow: visible;
+}
+
 .directionsTopic {
   text-align: center;
   padding: var(--space-md) var(--space-xl);

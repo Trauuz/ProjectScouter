@@ -57,7 +57,7 @@
   border: var(--rule-hairline) solid transparent;
   border-radius: var(--radius-round);
   background: transparent;
-  color: var(--color-ink-soft);
+  color: var(--color-ink);
   font-size: var(--text-md);
   cursor: pointer;
   transition:
@@ -82,7 +82,7 @@
   border: var(--rule-hairline) solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-ink-soft);
+  color: var(--color-ink);
   font-size: var(--text-sm);
   font-weight: 600;
   white-space: nowrap;
@@ -150,7 +150,7 @@
 
 .auth-field__message {
   min-height: 1lh;
-  color: var(--color-ink-faint);
+  color: var(--color-ink-muted);
   font-size: var(--text-xs);
   line-height: 1.45;
 }
@@ -183,7 +183,7 @@
   border: var(--rule-hairline) solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-accent-dark);
+  color: var(--color-ink-soft);
   font-size: var(--text-sm);
   text-decoration: underline;
   text-decoration-thickness: var(--rule-hairline);

@@ -7,7 +7,7 @@ import type {
 } from "./research-ports";
 import type { ResearchOwner } from "../domain/research-owner";
 import type { ResearchPrompt } from "../domain/research-prompt";
-import { logger } from "@/server/observability/structured-logger";
+import { logger } from "../../observability/structured-logger";
 
 const PENDING_MESSAGE =
   "Research is complete but still being saved. Retry saving without running the research again.";

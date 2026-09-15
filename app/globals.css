@@ -432,6 +432,12 @@ figure {
   line-height: 1.55;
 }
 
+.usage-dialog__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-sm);
+}
+
 .usage-dialog__close {
   width: 100%;
 }
