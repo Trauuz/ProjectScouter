@@ -1,6 +1,6 @@
 import { normalizeResearchSources } from "../application/normalize-sources";
 import { ResearchFailure } from "../application/research-errors";
-import type { ResearchProvider } from "../application/research-ports";
+import type { MeteredResearchProvider } from "../application/research-ports";
 import type { ResearchPrompt } from "../domain/research-prompt";
 import type {
   RawResearchSource,
@@ -22,6 +22,8 @@ type TavilySearchResult = {
 type TavilySearchResponse = {
   answer?: unknown;
   results?: unknown;
+  request_id?: unknown;
+  usage?: unknown;
 };
 
 const TAVILY_SEARCH_URL = "https://api.tavily.com/search";
@@ -115,13 +117,17 @@ export function extractTavilyResearch(
   };
 }
 
-export class TavilyResearchProvider implements ResearchProvider {
-  constructor(private readonly apiKey: string) {}
+export class TavilyResearchProvider implements MeteredResearchProvider {
+  constructor(
+    private readonly apiKey: string,
+    private readonly mode: string,
+    private readonly creditsPerCall: number,
+  ) {}
 
   async research(
     prompt: ResearchPrompt,
     signal: AbortSignal,
-  ): Promise<ResearchBundle> {
+  ) {
     try {
       const response = await fetch(TAVILY_SEARCH_URL, {
         method: "POST",
@@ -136,7 +142,7 @@ export class TavilyResearchProvider implements ResearchProvider {
             TAVILY_RESEARCH_QUERY_GUIDANCE,
             prompt.toString(),
           ].join(" "),
-          search_depth: "advanced",
+          search_depth: this.mode,
           max_results: 10,
           include_answer: "basic",
           include_raw_content: false,
@@ -154,9 +160,17 @@ export class TavilyResearchProvider implements ResearchProvider {
         );
       }
 
-      return extractTavilyResearch(
-        (await response.json()) as TavilySearchResponse,
-      );
+      const body = (await response.json()) as TavilySearchResponse;
+      return {
+        value: extractTavilyResearch(body),
+        usage: {
+          providerRequestId:
+            typeof body.request_id === "string" ? body.request_id : undefined,
+          inputTokens: 0,
+          outputTokens: 0,
+          credits: this.creditsPerCall,
+        },
+      };
     } catch (reason) {
       if (reason instanceof ResearchFailure) {
         throw reason;

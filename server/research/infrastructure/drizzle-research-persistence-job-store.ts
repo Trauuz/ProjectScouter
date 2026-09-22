@@ -16,6 +16,7 @@ import type { ResearchOwner } from "../domain/research-owner";
 import type { ResearchReport } from "../domain/research-report";
 import { DrizzleResearchRunRepository } from "./drizzle-research-run-repository";
 import { logger } from "../../observability/structured-logger";
+import { getProviderUsageLedger } from "../../provider-usage/infrastructure/drizzle-provider-usage-ledger";
 
 const uuidSchema = z.string().uuid();
 
@@ -30,6 +31,9 @@ type PersistenceJobEvent = Readonly<{
 }>;
 
 type PersistenceJobReporter = (event: PersistenceJobEvent) => void;
+type UsageReconciler = {
+  isReservationReconciled(reservationId: string): Promise<boolean>;
+};
 
 function defaultReporter(event: PersistenceJobEvent): void {
   if (event.event === "research.persistence.retryable_failure") {
@@ -79,6 +83,7 @@ export class DrizzleResearchPersistenceJobStore
     private readonly writer: ResearchReportWriter =
       new DrizzleResearchRunRepository(database),
     private readonly report: PersistenceJobReporter = defaultReporter,
+    private readonly usageReconciler?: UsageReconciler,
   ) {}
 
   async stageGenerated(
@@ -190,6 +195,13 @@ export class DrizzleResearchPersistenceJobStore
     usageReservationId: string | null,
     owner: ResearchOwner,
   ): Promise<void> {
+    if (
+      usageReservationId &&
+      this.usageReconciler &&
+      !(await this.usageReconciler.isReservationReconciled(usageReservationId))
+    ) {
+      throw new Error("Provider usage is not reconciled for this reservation.");
+    }
     await this.database.transaction(async (transaction) => {
       await transaction
         .update(researchPersistenceJobs)
@@ -243,6 +255,11 @@ export class DrizzleResearchPersistenceJobStore
 let persistenceJobStore: DrizzleResearchPersistenceJobStore | undefined;
 
 export function getResearchPersistenceJobStore() {
-  persistenceJobStore ??= new DrizzleResearchPersistenceJobStore();
+  persistenceJobStore ??= new DrizzleResearchPersistenceJobStore(
+    undefined,
+    undefined,
+    undefined,
+    getProviderUsageLedger(),
+  );
   return persistenceJobStore;
 }

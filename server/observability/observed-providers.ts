@@ -48,10 +48,10 @@ export function observeResearchProvider(
   logger: StructuredLogger = defaultLogger,
 ): ResearchProvider {
   return {
-    async research(prompt, signal) {
+    async research(prompt, signal, context) {
       const startedAt = Date.now();
       try {
-        return await provider.research(prompt, signal);
+        return await provider.research(prompt, signal, context);
       } catch (reason) {
         reportProviderFailure(
           logger,
@@ -72,10 +72,10 @@ export function observeRecommendationProvider(
   logger: StructuredLogger = defaultLogger,
 ): RecommendationProvider {
   return {
-    async generate(prompt, research, signal) {
+    async generate(prompt, research, signal, context) {
       const startedAt = Date.now();
       try {
-        return await provider.generate(prompt, research, signal);
+        return await provider.generate(prompt, research, signal, context);
       } catch (reason) {
         reportProviderFailure(
           logger,

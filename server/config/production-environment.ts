@@ -8,6 +8,11 @@ import {
   DatabaseConfigurationError,
   readDatabaseEnvironment,
 } from "../database/database-environment";
+import {
+  ProviderUsageConfigurationError,
+  PROVIDER_USAGE_VARIABLE_NAMES,
+  readProviderUsageEnvironment,
+} from "../provider-usage/infrastructure/provider-usage-environment";
 
 const CHECKED_VARIABLES = [
   "DATABASE_URL",
@@ -27,8 +32,10 @@ const CHECKED_VARIABLES = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "ACCOUNT_DELETION_WORKER_SECRET",
   "RESEARCH_API_KEY",
+  "RESEARCH_PROVIDER_MODE",
   "RECOMMENDATION_API_KEY",
   "RECOMMENDATION_MODEL",
+  ...PROVIDER_USAGE_VARIABLE_NAMES,
 ] as const;
 
 type ProductionVariableName = (typeof CHECKED_VARIABLES)[number];
@@ -92,11 +99,26 @@ export function validateProductionEnvironment(
   }
   for (const variableName of [
     "RESEARCH_API_KEY",
+    "RESEARCH_PROVIDER_MODE",
     "RECOMMENDATION_API_KEY",
     "RECOMMENDATION_MODEL",
   ] as const) {
     if (!nonEmpty(source[variableName])) {
       invalid.add(variableName);
+    }
+  }
+
+  try {
+    readProviderUsageEnvironment(source);
+  } catch (reason) {
+    if (reason instanceof ProviderUsageConfigurationError) {
+      for (const variableName of reason.variableNames) {
+        invalid.add(variableName);
+      }
+    } else {
+      for (const variableName of PROVIDER_USAGE_VARIABLE_NAMES) {
+        invalid.add(variableName);
+      }
     }
   }
 

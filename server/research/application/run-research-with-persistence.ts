@@ -52,7 +52,16 @@ export class RunResearchWithPersistence implements ResearchWorkflow {
     signal: AbortSignal,
     context: ResearchExecutionContext = {},
   ) {
-    const report = await this.runResearch.execute(prompt, signal);
+    const internalRequestId = context.internalRequestId ?? crypto.randomUUID();
+    const report = await this.runResearch.execute(prompt, signal, {
+      internalRequestId,
+      idempotencyKey: context.idempotencyKey ??
+        context.usageReservationId ??
+        internalRequestId,
+      usageReservationId: context.usageReservationId,
+      userId: owner.userId,
+      retryCount: context.retryCount ?? 0,
+    });
     let staged;
 
     try {

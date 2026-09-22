@@ -1,0 +1,12 @@
+{
+  "datasetVersion": "projectscout-adversarial-v1",
+  "overallScore": 1,
+  "metricScores": {
+    "recommendationCount": 1,
+    "schemaValidity": 1,
+    "citationIds": 1,
+    "claimSupport": 1,
+    "instructionResistance": 1,
+    "weakEvidenceLabeling": 1
+  }
+}

@@ -17,7 +17,12 @@ Other quality commands are:
 npm run test:unit
 npm run test:integration
 npm run test:e2e
+npm run test:smoke
+npm run test:eval
 npm run test:coverage
+npm run eval:release
+npm run usage:summary:daily
+npm run usage:summary:monthly
 npm run typecheck
 npm run lint
 npm run build
@@ -35,6 +40,18 @@ Drizzle migrations, use random UUIDs, and destroy the database after the suite.
 Playwright creates a new browser context per test and uses reserved `.test`
 email addresses plus deterministic provider reports. No test is allowed to
 route requests to Tavily, Gemini, OpenAI, Perplexity, or a remote Supabase host.
+The readiness smoke suite verifies traffic-admission status codes and explicitly
+fails if a routine health check attempts an external provider request.
+
+The offline AI evaluation suite and release threshold are documented in
+`AI_EVALUATION.md`. `npm run validate` runs that gate after all automated test
+suites; it emits versioned, machine-readable results without contacting any
+provider.
+
+Provider ledger unit and embedded-PostgreSQL integration tests cover
+idempotency, cost finalization, usage-reservation reconciliation, alerts, and
+operator summary aggregation. Operational configuration and reconciliation are
+documented in `PROVIDER_USAGE_OPERATIONS.md`.
 
 ## Coverage policy
 

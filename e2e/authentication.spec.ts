@@ -58,7 +58,16 @@ test("account deletion clears the authenticated UI", async ({ page, backend }) =
     .dispatchEvent("click");
   const dialog = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoSeriousAccessibilityViolations(page, ".account-deletion-dialog");
-  await dialog.getByRole("button", { name: "Delete account" }).click();
+  if (!(await dialog.isVisible())) {
+    await page.locator(".site-header__action summary").click();
+    await page.locator(".site-header__action").getByRole("button", { name: "Settings" })
+      .dispatchEvent("click");
+    await page.locator(".site-header__action").getByRole("button", { name: "Delete account" })
+      .dispatchEvent("click");
+  }
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Delete account" })
+    .dispatchEvent("click");
 
   await expect(page.locator(".site-header__action").getByRole("button", { name: "Log in" })).toBeVisible();
   expect(backend.accountDeletionRequests).toBe(1);

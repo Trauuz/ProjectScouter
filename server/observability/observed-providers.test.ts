@@ -27,6 +27,12 @@ describe("observeResearchProvider", () => {
       () => expect(provider.research(
         ResearchPrompt.create(promptText),
         new AbortController().signal,
+        {
+          internalRequestId: crypto.randomUUID(),
+          idempotencyKey: crypto.randomUUID(),
+          userId: null,
+          retryCount: 0,
+        },
       )).rejects.toThrow(),
     );
 

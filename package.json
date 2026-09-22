@@ -8,10 +8,13 @@
     "test:unit": "vitest run --config vitest.config.mts",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:e2e": "playwright test",
+    "test:smoke": "vitest run --config vitest.config.mts tests/smoke",
+    "test:eval": "vitest run --config vitest.config.mts evals/ai-evaluation.test.ts",
+    "eval:release": "tsx evals/run-release-gate.ts",
     "test:coverage": "vitest run --config vitest.config.mts --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "validate": "npm run lint && npm run typecheck && npm test && npm run build",
+    "validate": "npm run lint && npm run typecheck && npm test && npm run eval:release && npm run build",
     "prebuild": "npm run validate:deployment",
     "build": "next build",
     "postbuild": "npm run validate:client-bundle",
@@ -22,7 +25,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "usage:summary:daily": "node --conditions=react-server --import tsx scripts/provider-usage-summary.ts daily",
+    "usage:summary:monthly": "node --conditions=react-server --import tsx scripts/provider-usage-summary.ts monthly"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

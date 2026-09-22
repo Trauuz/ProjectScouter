@@ -2,8 +2,8 @@ import Perplexity from "@perplexity-ai/perplexity_ai";
 import OpenAI from "openai";
 
 import type {
-  RecommendationProvider,
-  ResearchProvider,
+  MeteredRecommendationProvider,
+  MeteredResearchProvider,
 } from "../application/research-ports";
 import { GeminiRecommendationProvider } from "./gemini-recommendation-provider";
 import { OpenAiRecommendationProvider } from "./openai-recommendation-provider";
@@ -18,10 +18,11 @@ import { TavilyResearchProvider } from "./tavily-research-provider";
 
 type RecommendationProviderBuilder = (
   settings: RecommendationProviderSettings,
-) => RecommendationProvider;
+) => MeteredRecommendationProvider;
 type ResearchProviderBuilder = (
   settings: ResearchProviderSettings,
-) => ResearchProvider;
+  creditsPerCall: number,
+) => MeteredResearchProvider;
 
 const recommendationProviderBuilders: Record<
   RecommendationProviderName,
@@ -44,25 +45,33 @@ const researchProviderBuilders: Record<
   ResearchProviderName,
   ResearchProviderBuilder
 > = {
-  perplexity: (settings) =>
+  perplexity: (settings, creditsPerCall) =>
     new PerplexityResearchProvider(
       new Perplexity({
         apiKey: settings.apiKey,
         timeout: 55_000,
         maxRetries: 0,
       }),
+      settings.mode,
+      creditsPerCall,
     ),
-  tavily: (settings) => new TavilyResearchProvider(settings.apiKey),
+  tavily: (settings, creditsPerCall) =>
+    new TavilyResearchProvider(
+      settings.apiKey,
+      settings.mode,
+      creditsPerCall,
+    ),
 };
 
 export function createRecommendationProvider(
   settings: RecommendationProviderSettings,
-): RecommendationProvider {
+): MeteredRecommendationProvider {
   return recommendationProviderBuilders[settings.provider](settings);
 }
 
 export function createResearchProvider(
   settings: ResearchProviderSettings,
-): ResearchProvider {
-  return researchProviderBuilders[settings.provider](settings);
+  creditsPerCall: number,
+): MeteredResearchProvider {
+  return researchProviderBuilders[settings.provider](settings, creditsPerCall);
 }

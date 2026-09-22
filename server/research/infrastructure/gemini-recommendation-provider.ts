@@ -5,7 +5,7 @@ import {
   RECOMMENDATION_INSTRUCTIONS,
 } from "../application/recommendation-contract";
 import { ResearchFailure } from "../application/research-errors";
-import type { RecommendationProvider } from "../application/research-ports";
+import type { MeteredRecommendationProvider } from "../application/research-ports";
 import type { ResearchPrompt } from "../domain/research-prompt";
 import type {
   ProjectRecommendation,
@@ -23,6 +23,11 @@ type GeminiCandidate = {
 };
 
 type GeminiResponse = {
+  responseId?: string;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+  };
   candidates?: GeminiCandidate[];
 };
 
@@ -102,7 +107,7 @@ async function upstreamErrorFrom(response: Response): Promise<Error> {
   );
 }
 
-export class GeminiRecommendationProvider implements RecommendationProvider {
+export class GeminiRecommendationProvider implements MeteredRecommendationProvider {
   constructor(
     private readonly apiKey: string,
     private readonly model: string,
@@ -112,7 +117,7 @@ export class GeminiRecommendationProvider implements RecommendationProvider {
     prompt: ResearchPrompt,
     research: ResearchBundle,
     signal: AbortSignal,
-  ): Promise<ProjectRecommendation[]> {
+  ) {
     const schema = createRecommendationSchema(
       research.sources.map((source) => source.id),
     );
@@ -167,10 +172,18 @@ export class GeminiRecommendationProvider implements RecommendationProvider {
       const body = (await response.json()) as GeminiResponse;
       const parsed = schema.parse(parseJsonResponse(responseTextFrom(body)));
 
-      return parsed.recommendations.map((recommendation) => ({
-        ...recommendation,
-        weakEvidence: false,
-      }));
+      return {
+        value: parsed.recommendations.map((recommendation) => ({
+          ...recommendation,
+          weakEvidence: false,
+        })) as ProjectRecommendation[],
+        usage: {
+          providerRequestId: body.responseId,
+          inputTokens: body.usageMetadata?.promptTokenCount ?? 0,
+          outputTokens: body.usageMetadata?.candidatesTokenCount ?? 0,
+          credits: 0,
+        },
+      };
     } catch (reason) {
       if (reason instanceof ResearchFailure) {
         throw reason;

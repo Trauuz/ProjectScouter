@@ -1,5 +1,6 @@
 import {
   boolean,
+  bigint,
   date,
   index,
   integer,
@@ -61,6 +62,16 @@ export const accountDeletionAuditEventEnum = projectScoutSchema.enum(
     "retryable_failure",
     "completed",
   ],
+);
+
+export const providerOperationEnum = projectScoutSchema.enum(
+  "provider_operation",
+  ["research", "recommendation"],
+);
+
+export const providerCallStatusEnum = projectScoutSchema.enum(
+  "provider_call_status",
+  ["pending", "completed", "failed", "timed_out", "cancelled"],
 );
 
 export const accountDeletionRequests = projectScoutSchema.table(
@@ -159,6 +170,59 @@ export const usageReservations = projectScoutSchema.table(
       table.userId,
       table.accountPeriodStart,
       table.status,
+    ),
+  ],
+);
+
+export const providerUsageLedger = projectScoutSchema.table(
+  "provider_usage_ledger",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    internalRequestId: uuid("internal_request_id").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    usageReservationId: uuid("usage_reservation_id").references(
+      () => usageReservations.id,
+      { onDelete: "set null" },
+    ),
+    userId: uuid("user_id"),
+    provider: text("provider").notNull(),
+    operation: providerOperationEnum("operation").notNull(),
+    modelOrMode: text("model_or_mode").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true, mode: "date" })
+      .notNull(),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    status: providerCallStatusEnum("status").default("pending").notNull(),
+    providerRequestId: text("provider_request_id"),
+    inputTokens: integer("input_tokens").default(0).notNull(),
+    outputTokens: integer("output_tokens").default(0).notNull(),
+    credits: integer("credits").default(0).notNull(),
+    estimatedCostMicrodollars: bigint("estimated_cost_microdollars", {
+      mode: "number",
+    }).default(0).notNull(),
+    retryCount: integer("retry_count").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("provider_usage_ledger_idempotency_operation_uidx").on(
+      table.idempotencyKey,
+      table.operation,
+    ),
+    index("provider_usage_ledger_reservation_idx").on(table.usageReservationId),
+    index("provider_usage_ledger_started_provider_idx").on(
+      table.startedAt,
+      table.provider,
+    ),
+    index("provider_usage_ledger_user_started_idx").on(
+      table.userId,
+      table.startedAt,
     ),
   ],
 );

@@ -5,7 +5,7 @@ import Perplexity, {
 
 import { normalizeResearchSources } from "../application/normalize-sources";
 import { ResearchFailure } from "../application/research-errors";
-import type { ResearchProvider } from "../application/research-ports";
+import type { MeteredResearchProvider } from "../application/research-ports";
 import type { ResearchPrompt } from "../domain/research-prompt";
 import type {
   RawResearchSource,
@@ -13,8 +13,20 @@ import type {
 } from "../domain/research-report";
 
 type PerplexityResponseLike = {
+  id?: unknown;
+  usage?: unknown;
   output: unknown[];
 };
+
+function numericField(value: unknown, key: string): number {
+  if (!isRecord(value)) {
+    return 0;
+  }
+  const candidate = value[key];
+  return typeof candidate === "number" && Number.isFinite(candidate)
+    ? Math.max(0, Math.trunc(candidate))
+    : 0;
+}
 
 export const PERPLEXITY_RESEARCH_INSTRUCTIONS = `You are ProjectScout's research layer.
 Search the current public web for existing apps, websites, products, reviews, and accessible user discussions relevant to the user's project topic.
@@ -94,17 +106,21 @@ export function extractPerplexityResearch(
   };
 }
 
-export class PerplexityResearchProvider implements ResearchProvider {
-  constructor(private readonly client: Perplexity) {}
+export class PerplexityResearchProvider implements MeteredResearchProvider {
+  constructor(
+    private readonly client: Perplexity,
+    private readonly mode: string,
+    private readonly creditsPerCall: number,
+  ) {}
 
   async research(
     prompt: ResearchPrompt,
     signal: AbortSignal,
-  ): Promise<ResearchBundle> {
+  ) {
     try {
       const response = await this.client.responses.create(
         {
-          preset: "pro-search",
+          preset: this.mode as "pro-search",
           instructions: PERPLEXITY_RESEARCH_INSTRUCTIONS,
           input: `Research this project direction: ${prompt.toString()}`,
           max_output_tokens: 2_500,
@@ -113,9 +129,17 @@ export class PerplexityResearchProvider implements ResearchProvider {
         { signal, timeout: 55_000, maxRetries: 0 },
       );
 
-      return extractPerplexityResearch(
-        response as unknown as PerplexityResponseLike,
-      );
+      const measured = response as unknown as PerplexityResponseLike;
+      return {
+        value: extractPerplexityResearch(measured),
+        usage: {
+          providerRequestId:
+            typeof measured.id === "string" ? measured.id : undefined,
+          inputTokens: numericField(measured.usage, "input_tokens"),
+          outputTokens: numericField(measured.usage, "output_tokens"),
+          credits: this.creditsPerCall,
+        },
+      };
     } catch (reason) {
       if (
         signal.aborted ||

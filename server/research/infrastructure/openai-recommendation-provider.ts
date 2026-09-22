@@ -9,14 +9,14 @@ import {
   RECOMMENDATION_INSTRUCTIONS,
 } from "../application/recommendation-contract";
 import { ResearchFailure } from "../application/research-errors";
-import type { RecommendationProvider } from "../application/research-ports";
+import type { MeteredRecommendationProvider } from "../application/research-ports";
 import type { ResearchPrompt } from "../domain/research-prompt";
 import type {
   ProjectRecommendation,
   ResearchBundle,
 } from "../domain/research-report";
 
-export class OpenAiRecommendationProvider implements RecommendationProvider {
+export class OpenAiRecommendationProvider implements MeteredRecommendationProvider {
   constructor(
     private readonly client: OpenAI,
     private readonly model: string,
@@ -26,7 +26,7 @@ export class OpenAiRecommendationProvider implements RecommendationProvider {
     prompt: ResearchPrompt,
     research: ResearchBundle,
     signal: AbortSignal,
-  ): Promise<ProjectRecommendation[]> {
+  ) {
     const schema = createRecommendationSchema(
       research.sources.map((source) => source.id),
     );
@@ -63,10 +63,18 @@ export class OpenAiRecommendationProvider implements RecommendationProvider {
         );
       }
 
-      return response.output_parsed.recommendations.map((recommendation) => ({
-        ...recommendation,
-        weakEvidence: false,
-      }));
+      return {
+        value: response.output_parsed.recommendations.map((recommendation) => ({
+          ...recommendation,
+          weakEvidence: false,
+        })) as ProjectRecommendation[],
+        usage: {
+          providerRequestId: response.id,
+          inputTokens: response.usage?.input_tokens ?? 0,
+          outputTokens: response.usage?.output_tokens ?? 0,
+          credits: 0,
+        },
+      };
     } catch (reason) {
       if (reason instanceof ResearchFailure) {
         throw reason;

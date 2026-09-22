@@ -65,10 +65,14 @@ describe("DrizzleResearchPersistenceJobStore", () => {
     const writer = {
       saveCompletedResearchRun: vi.fn().mockResolvedValue(JOB_ID),
     };
+    const usageReconciler = {
+      isReservationReconciled: vi.fn().mockResolvedValue(true),
+    };
     const store = new DrizzleResearchPersistenceJobStore(
       database as never,
       writer,
       vi.fn(),
+      usageReconciler,
     );
 
     await expect(store.materialize(JOB_ID, owner)).resolves.toEqual({
@@ -81,11 +85,34 @@ describe("DrizzleResearchPersistenceJobStore", () => {
       report,
       JOB_ID,
     );
+    expect(usageReconciler.isReservationReconciled).toHaveBeenCalledWith(
+      RESERVATION_ID,
+    );
     expect(database.updates).toEqual(expect.arrayContaining([
       expect.objectContaining({
         table: researchPersistenceJobs,
         values: expect.objectContaining({ status: "completed" }),
       }),
+      expect.objectContaining({
+        table: usageReservations,
+        values: expect.objectContaining({ status: "completed" }),
+      }),
+    ]));
+  });
+
+  it("does not complete usage when both provider calls are not reconciled", async () => {
+    const database = new PersistenceJobDatabase();
+    const store = new DrizzleResearchPersistenceJobStore(
+      database as never,
+      { saveCompletedResearchRun: vi.fn().mockResolvedValue(JOB_ID) },
+      vi.fn(),
+      { isReservationReconciled: vi.fn().mockResolvedValue(false) },
+    );
+
+    await expect(store.materialize(JOB_ID, owner)).rejects.toThrow(
+      /not reconciled/i,
+    );
+    expect(database.updates).not.toEqual(expect.arrayContaining([
       expect.objectContaining({
         table: usageReservations,
         values: expect.objectContaining({ status: "completed" }),

@@ -14,6 +14,7 @@ export default defineConfig({
         "features/auth/**/*.ts",
         "features/research/prompt-history/**/*.ts",
         "server/auth/**/*.ts",
+        "server/health/**/*.ts",
         "server/observability/**/*.ts",
         "server/research/application/**/*.ts",
         "server/research/presentation/**/*.ts",

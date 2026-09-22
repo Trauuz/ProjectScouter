@@ -10,10 +10,6 @@ import {
 } from "../database/schema";
 
 import {
-  ACCOUNT_MONTHLY_RESEARCH_LIMIT,
-  GOOGLE_AI_DAILY_RESEARCH_LIMIT,
-  TAVILY_API_CREDITS_PER_RESEARCH,
-  TAVILY_MONTHLY_APP_CREDIT_LIMIT,
   googleDailyUsagePeriod,
   monthlyUsage,
   monthlyUsagePeriod,
@@ -22,11 +18,13 @@ import {
   type MonthlyUsageReservation,
   UsageReservation,
   type UsageReservationState,
+  type UsageLimits,
 } from "./monthly-usage";
+import { readProviderUsageEnvironment } from "../provider-usage/infrastructure/provider-usage-environment";
 
 const userIdSchema = z.string().uuid();
-const TAVILY_MONTHLY_COUNTER_ID = "00000000-0000-4000-8000-000000000001";
-const GOOGLE_DAILY_COUNTER_ID = "00000000-0000-4000-8000-000000000002";
+const RESEARCH_MONTHLY_COUNTER_ID = "00000000-0000-4000-8000-000000000001";
+const RECOMMENDATION_DAILY_COUNTER_ID = "00000000-0000-4000-8000-000000000002";
 type TerminalUsageReservationState = Exclude<
   UsageReservationState,
   "pending"
@@ -54,13 +52,21 @@ async function decrementCounter(
 }
 
 class UsageLimitReached extends Error {
-  constructor(readonly reason: "account" | "google-ai" | "tavily") {
+  constructor(
+    readonly reason:
+      | "account"
+      | "recommendation-provider"
+      | "research-provider",
+  ) {
     super(`Research usage limit reached: ${reason}`);
   }
 }
 
 export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
-  constructor(private readonly database: ProjectScoutDatabase = getDatabase()) {}
+  constructor(
+    private readonly database: ProjectScoutDatabase = getDatabase(),
+    private readonly limits: UsageLimits = readProviderUsageEnvironment().limits,
+  ) {}
 
   async read(userId: string, now = new Date()): Promise<MonthlyUsage> {
     const validUserId = userIdSchema.parse(userId);
@@ -74,7 +80,11 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
       ))
       .limit(1);
 
-    return monthlyUsage(row?.usedCredits ?? 0, now);
+    return monthlyUsage(
+      row?.usedCredits ?? 0,
+      now,
+      this.limits.accountMonthlyResearch,
+    );
   }
 
   async reserve(
@@ -100,7 +110,7 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
             },
             setWhere: lt(
               accountMonthlyUsage.usedCredits,
-              ACCOUNT_MONTHLY_RESEARCH_LIMIT,
+              this.limits.accountMonthlyResearch,
             ),
           })
           .returning({ usedCredits: accountMonthlyUsage.usedCredits });
@@ -113,31 +123,32 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
         const [tavilyRow] = await transaction
           .insert(accountMonthlyUsage)
           .values({
-            userId: TAVILY_MONTHLY_COUNTER_ID,
+            userId: RESEARCH_MONTHLY_COUNTER_ID,
             periodStart,
-            usedCredits: TAVILY_API_CREDITS_PER_RESEARCH,
+            usedCredits: this.limits.researchCreditsPerCall,
           })
           .onConflictDoUpdate({
             target: [accountMonthlyUsage.userId, accountMonthlyUsage.periodStart],
             set: {
-              usedCredits: sql`${accountMonthlyUsage.usedCredits} + ${TAVILY_API_CREDITS_PER_RESEARCH}`,
+              usedCredits: sql`${accountMonthlyUsage.usedCredits} + ${this.limits.researchCreditsPerCall}`,
               updatedAt: now,
             },
             setWhere: lte(
               accountMonthlyUsage.usedCredits,
-              TAVILY_MONTHLY_APP_CREDIT_LIMIT - TAVILY_API_CREDITS_PER_RESEARCH,
+              this.limits.researchMonthlyCredits -
+                this.limits.researchCreditsPerCall,
             ),
           })
           .returning({ usedCredits: accountMonthlyUsage.usedCredits });
 
         if (!tavilyRow) {
-          throw new UsageLimitReached("tavily");
+          throw new UsageLimitReached("research-provider");
         }
 
         const [googleRow] = await transaction
           .insert(accountMonthlyUsage)
           .values({
-            userId: GOOGLE_DAILY_COUNTER_ID,
+            userId: RECOMMENDATION_DAILY_COUNTER_ID,
             periodStart: googlePeriodStart,
             usedCredits: 1,
           })
@@ -149,13 +160,13 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
             },
             setWhere: lt(
               accountMonthlyUsage.usedCredits,
-              GOOGLE_AI_DAILY_RESEARCH_LIMIT,
+              this.limits.recommendationDailyCalls,
             ),
           })
           .returning({ usedCredits: accountMonthlyUsage.usedCredits });
 
         if (!googleRow) {
-          throw new UsageLimitReached("google-ai");
+          throw new UsageLimitReached("recommendation-provider");
         }
 
         await transaction.insert(usageReservations).values({
@@ -178,7 +189,11 @@ export class DrizzleMonthlyUsageMeter implements MonthlyUsageMeter {
 
     return {
       allowed: true,
-      usage: monthlyUsage(accountUsed, now),
+      usage: monthlyUsage(
+        accountUsed,
+        now,
+        this.limits.accountMonthlyResearch,
+      ),
       reservation: new UsageReservation(
         reservationId,
         (state) => this.transition(reservationId, state),

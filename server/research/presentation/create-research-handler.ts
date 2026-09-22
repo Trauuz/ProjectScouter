@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { ZodError } from "zod";
 
 import type { RateLimiter } from "../application/rate-limiter";
@@ -87,6 +89,21 @@ function rateLimitKey(owner: ResearchOwner): string {
   return `visitor:${owner.sessionId.toString()}`;
 }
 
+function idempotencyKey(
+  request: Request,
+  owner: ResearchOwner,
+  fallback: string,
+): string {
+  const supplied = request.headers.get("idempotency-key")?.trim().toLowerCase();
+  if (!supplied || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(supplied)) {
+    return fallback;
+  }
+  const ownerKey = owner.userId ?? owner.sessionId.toString();
+  return createHash("sha256")
+    .update(`projectscout-provider-operation:${ownerKey}:${supplied}`)
+    .digest("hex");
+}
+
 function isAllowedOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
 
@@ -129,7 +146,7 @@ function failureResponse(
 ): Response {
   const responses = {
     NO_EVIDENCE: [422, "No usable public evidence was found.", false],
-    UPSTREAM_FAILED: [502, "A research provider could not complete the request.", true],
+    UPSTREAM_FAILED: [503, "Research providers are temporarily unavailable. Please try again shortly.", true],
     UPSTREAM_TIMEOUT: [504, "Research took too long. Please try again.", true],
     PERSISTENCE_UNAVAILABLE: [503, "Research was generated but could not be saved safely. Please try again.", true],
     SERVER_MISCONFIGURED: [500, "The research service is not configured.", false],
@@ -140,7 +157,11 @@ function failureResponse(
     ? diagnosticDetails(failure)
     : undefined;
 
-  return errorResponse(status, failure.code, message, retryable, undefined, details);
+  const headers = failure.code === "UPSTREAM_FAILED"
+    ? { "Retry-After": "30" }
+    : undefined;
+
+  return errorResponse(status, failure.code, message, retryable, headers, details);
 }
 
 async function readPrompt(request: Request): Promise<ResearchPrompt> {
@@ -237,21 +258,21 @@ export function createResearchPostHandler({
           );
         }
         if (!reservation.allowed) {
-          if (reservation.denialReason === "google-ai") {
-            recordUsageDenial("application_limit", "gemini");
+          if (reservation.denialReason === "recommendation-provider") {
+            recordUsageDenial("application_limit", "recommendation");
             return errorResponse(
               429,
               "FREE_TIER_CAPACITY_REACHED",
-              "ProjectScout has reached today’s AI free-tier capacity. Please try again tomorrow.",
+              "ProjectScout has reached today’s recommendation-provider capacity. Please try again tomorrow.",
               true,
             );
           }
-          if (reservation.denialReason === "tavily") {
-            recordUsageDenial("application_limit", "tavily");
+          if (reservation.denialReason === "research-provider") {
+            recordUsageDenial("application_limit", "research");
             return errorResponse(
               429,
               "FREE_TIER_CAPACITY_REACHED",
-              "ProjectScout has reached this month’s search free-tier capacity.",
+              "ProjectScout has reached this month’s research-provider capacity.",
               false,
             );
           }
@@ -269,8 +290,16 @@ export function createResearchPostHandler({
         request.signal,
         AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       ]);
+      const internalRequestId = crypto.randomUUID();
       const result = await workflow.execute(prompt, owner, signal, {
         usageReservationId: usageReservation?.id,
+        internalRequestId,
+        idempotencyKey: idempotencyKey(
+          request,
+          owner,
+          usageReservation?.id ?? internalRequestId,
+        ),
+        retryCount: 0,
       });
 
       if (result.persistence.status === "saved") {

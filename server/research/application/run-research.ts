@@ -10,6 +10,7 @@ import type {
   ResearchProvider,
   ResearchUseCase,
 } from "./research-ports";
+import type { ProviderCallContext } from "../../provider-usage/domain/provider-usage";
 
 type Dependencies = {
   researchProvider: ResearchProvider;
@@ -50,10 +51,12 @@ export class RunResearch implements ResearchUseCase {
   async execute(
     prompt: ResearchPrompt,
     signal: AbortSignal,
+    context: ProviderCallContext,
   ): Promise<ResearchReport> {
     const research = await this.dependencies.researchProvider.research(
       prompt,
       signal,
+      { ...context, idempotencyKey: `${context.idempotencyKey}:research` },
     );
 
     if (research.sources.length === 0) {
@@ -65,6 +68,10 @@ export class RunResearch implements ResearchUseCase {
         prompt,
         research,
         signal,
+        {
+          ...context,
+          idempotencyKey: `${context.idempotencyKey}:recommendation`,
+        },
       );
 
     if (recommendations.length !== 3) {

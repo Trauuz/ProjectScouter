@@ -8,6 +8,7 @@ export type RecommendationProviderName =
 export type ResearchProviderSettings = {
   provider: ResearchProviderName;
   apiKey: string;
+  mode: string;
 };
 
 export type RecommendationProviderSettings = {

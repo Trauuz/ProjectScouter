@@ -87,6 +87,28 @@ export function getDatabase(): ProjectScoutDatabase {
   return database;
 }
 
+export async function checkDatabaseConnection(signal: AbortSignal): Promise<void> {
+  getDatabase();
+  const sqlClient = databaseGlobals.projectScoutSqlClient;
+  if (!sqlClient) {
+    throw new Error("Database client is unavailable.");
+  }
+
+  const query = sqlClient`select 1 as ready`;
+  const cancelQuery = () => query.cancel();
+  if (signal.aborted) {
+    cancelQuery();
+    throw new DOMException("Database readiness check aborted.", "AbortError");
+  }
+
+  signal.addEventListener("abort", cancelQuery, { once: true });
+  try {
+    await query;
+  } finally {
+    signal.removeEventListener("abort", cancelQuery);
+  }
+}
+
 export async function closeDatabase(timeoutSeconds?: number): Promise<void> {
   const sqlClient = databaseGlobals.projectScoutSqlClient;
   databaseGlobals.projectScoutSqlClient = undefined;

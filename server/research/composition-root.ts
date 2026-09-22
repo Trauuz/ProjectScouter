@@ -14,6 +14,15 @@ import {
   observeRecommendationProvider,
   observeResearchProvider,
 } from "../observability/observed-providers";
+import { logger } from "../observability/structured-logger";
+import {
+  ledgerRecommendationProvider,
+  ledgerResearchProvider,
+} from "../provider-usage/application/ledgered-providers";
+import { ProviderUsageMonitor } from "../provider-usage/application/provider-usage-monitor";
+import { RecordProviderCall } from "../provider-usage/application/record-provider-call";
+import { getProviderUsageLedger } from "../provider-usage/infrastructure/drizzle-provider-usage-ledger";
+import { readProviderUsageEnvironment } from "../provider-usage/infrastructure/provider-usage-environment";
 
 type ResearchPostHandler = ReturnType<typeof createResearchPostHandler>;
 
@@ -26,14 +35,56 @@ export function getResearchWorkflow(): RunResearchWithPersistence {
   }
 
   const environment = readResearchEnvironment();
+  const usageEnvironment = readProviderUsageEnvironment();
+  const usageLedger = getProviderUsageLedger();
+  const usageMonitor = new ProviderUsageMonitor(
+    usageLedger,
+    {
+      ...usageEnvironment.alerts,
+      researchMonthlyCreditCeiling:
+        usageEnvironment.limits.researchMonthlyCredits,
+      recommendationDailyCallCeiling:
+        usageEnvironment.limits.recommendationDailyCalls,
+    },
+    logger,
+  );
   workflow = new RunResearchWithPersistence(
     new RunResearch(
       observeResearchProvider(
-        createResearchProvider(environment.research),
+        ledgerResearchProvider(
+          createResearchProvider(
+            environment.research,
+            usageEnvironment.limits.researchCreditsPerCall,
+          ),
+          new RecordProviderCall(
+            usageLedger,
+            {
+              provider: environment.research.provider,
+              operation: "research",
+              modelOrMode: environment.research.mode,
+              pricing: usageEnvironment.pricing.research,
+            },
+            undefined,
+            usageMonitor,
+          ),
+        ),
         environment.research.provider,
       ),
       observeRecommendationProvider(
-        createRecommendationProvider(environment.recommendation),
+        ledgerRecommendationProvider(
+          createRecommendationProvider(environment.recommendation),
+          new RecordProviderCall(
+            usageLedger,
+            {
+              provider: environment.recommendation.provider,
+              operation: "recommendation",
+              modelOrMode: environment.recommendation.model,
+              pricing: usageEnvironment.pricing.recommendation,
+            },
+            undefined,
+            usageMonitor,
+          ),
+        ),
         environment.recommendation.provider,
       ),
     ),

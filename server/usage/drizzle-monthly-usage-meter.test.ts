@@ -12,6 +12,12 @@ import { DrizzleMonthlyUsageMeter } from "./drizzle-monthly-usage-meter";
 const TAVILY_COUNTER_ID = "00000000-0000-4000-8000-000000000001";
 const GOOGLE_COUNTER_ID = "00000000-0000-4000-8000-000000000002";
 const USER_ID = "138bb24c-202a-448e-93ae-9bdfbabeec71";
+const TEST_LIMITS = {
+  accountMonthlyResearch: 5,
+  researchMonthlyCredits: 900,
+  researchCreditsPerCall: 2,
+  recommendationDailyCalls: 10,
+};
 
 type CounterValues = {
   userId: string;
@@ -89,7 +95,7 @@ class AtomicReservationDatabase {
 describe("DrizzleMonthlyUsageMeter concurrency", () => {
   it("atomically limits concurrent reservations across account and application counters", async () => {
     const database = new AtomicReservationDatabase();
-    const meter = new DrizzleMonthlyUsageMeter(database as never);
+    const meter = new DrizzleMonthlyUsageMeter(database as never, TEST_LIMITS);
     const now = new Date("2026-09-14T12:00:00.000Z");
 
     const results = await Promise.all(

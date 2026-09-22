@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDatabase } from "@/server/database/client";
 import {
   accountMonthlyUsage,
+  providerUsageLedger,
   researchPersistenceJobs,
   researchRuns,
   usageReservations,
@@ -12,6 +13,10 @@ import {
 
 export async function deleteAccountData(userId: string): Promise<void> {
   await getDatabase().transaction(async (transaction) => {
+    await transaction
+      .update(providerUsageLedger)
+      .set({ userId: null, updatedAt: new Date() })
+      .where(eq(providerUsageLedger.userId, userId));
     await transaction
       .delete(researchPersistenceJobs)
       .where(eq(researchPersistenceJobs.userId, userId));

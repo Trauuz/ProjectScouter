@@ -78,6 +78,33 @@ function handlerWith(
 }
 
 describe("createResearchPostHandler rate limiting", () => {
+  it("uses a stable, owner-scoped idempotency key for duplicate client requests", async () => {
+    const execute = vi.fn().mockResolvedValue(successfulResult);
+    const workflow: ResearchWorkflow = { execute };
+    const reservation = {
+      id: "7206b527-d9b0-42e7-87f2-bd78dd354db6",
+      complete: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn().mockResolvedValue(undefined),
+    };
+    const handler = handlerWith(workflow, usageMeterWith(reservation));
+    const clientKey = "53af9f2c-e3cb-4fbe-8fe5-28de78ef04ca";
+    const first = researchRequest("198.51.100.10", "198.51.100.11");
+    const second = researchRequest("198.51.100.10", "198.51.100.11");
+    first.headers.set("idempotency-key", clientKey);
+    second.headers.set("idempotency-key", clientKey);
+
+    await handler(first, authenticatedOwner());
+    await handler(second, authenticatedOwner());
+
+    const firstContext = execute.mock.calls[0][3];
+    const secondContext = execute.mock.calls[1][3];
+    expect(firstContext.idempotencyKey).toMatch(/^[a-f0-9]{64}$/);
+    expect(secondContext.idempotencyKey).toBe(firstContext.idempotencyKey);
+    expect(secondContext.internalRequestId).not.toBe(
+      firstContext.internalRequestId,
+    );
+  });
+
   it("rejects non-JSON requests before executing research", async () => {
     const workflow: ResearchWorkflow = { execute: vi.fn() };
     const handler = createResearchPostHandler({
@@ -133,8 +160,8 @@ describe("createResearchPostHandler rate limiting", () => {
 
   it.each([
     ["account", "MONTHLY_USAGE_EXCEEDED"],
-    ["google-ai", "FREE_TIER_CAPACITY_REACHED"],
-    ["tavily", "FREE_TIER_CAPACITY_REACHED"],
+    ["recommendation-provider", "FREE_TIER_CAPACITY_REACHED"],
+    ["research-provider", "FREE_TIER_CAPACITY_REACHED"],
   ] as const)("returns a stable denial for the %s usage limit", async (denialReason, code) => {
     const workflow: ResearchWorkflow = { execute: vi.fn() };
     const usageMeter = {
@@ -327,6 +354,33 @@ describe("createResearchPostHandler rate limiting", () => {
     );
 
     expect(reservation.release).toHaveBeenCalledTimes(1);
+    expect(reservation.complete).not.toHaveBeenCalled();
+  });
+
+  it("degrades gracefully when an AI provider is unavailable", async () => {
+    const reservation = {
+      complete: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn().mockResolvedValue(undefined),
+    };
+    const workflow: ResearchWorkflow = {
+      execute: vi.fn().mockRejectedValue(
+        new ResearchFailure("UPSTREAM_FAILED", "provider connection refused"),
+      ),
+    };
+
+    const response = await handlerWith(workflow, usageMeterWith(reservation))(
+      researchRequest("198.51.100.10", "198.51.100.11"),
+      authenticatedOwner(),
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Retry-After")).toBe("30");
+    expect(await response.json()).toEqual({ error: {
+      code: "UPSTREAM_FAILED",
+      message: "Research providers are temporarily unavailable. Please try again shortly.",
+      retryable: true,
+    } });
+    expect(reservation.release).toHaveBeenCalledOnce();
     expect(reservation.complete).not.toHaveBeenCalled();
   });
 

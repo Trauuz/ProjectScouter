@@ -16,6 +16,7 @@ const optionalSetting = z.preprocess(
 const rawEnvironmentSchema = z.object({
   RESEARCH_PROVIDER: z.enum(RESEARCH_PROVIDER_NAMES).optional(),
   RESEARCH_API_KEY: optionalSetting,
+  RESEARCH_PROVIDER_MODE: optionalSetting,
   RECOMMENDATION_PROVIDER: z.enum(RECOMMENDATION_PROVIDER_NAMES).optional(),
   RECOMMENDATION_API_KEY: optionalSetting,
   RECOMMENDATION_MODEL: optionalSetting,
@@ -37,6 +38,7 @@ const environmentSchema = rawEnvironmentSchema
         source.RESEARCH_API_KEY ??
         source.TAVILY_API_KEY ??
         source.PERPLEXITY_API_KEY,
+      mode: source.RESEARCH_PROVIDER_MODE,
     },
     recommendation: {
       provider:
@@ -56,6 +58,7 @@ const environmentSchema = rawEnvironmentSchema
       research: z.object({
         provider: z.enum(RESEARCH_PROVIDER_NAMES),
         apiKey: z.string().min(1),
+        mode: z.string().min(1),
       }),
       recommendation: z.object({
         provider: z.enum(RECOMMENDATION_PROVIDER_NAMES),

@@ -43,6 +43,13 @@
       "when": 1789452796146,
       "tag": "20260915061316_quick_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790002800000,
+      "tag": "20260921070000_provider_usage_ledger",
+      "breakpoints": true
     }
   ]
 }

@@ -6,9 +6,32 @@ import type {
   ResearchPersistenceStatus,
   ResearchReport,
 } from "../domain/research-report";
+import type {
+  MeteredProviderResult,
+  ProviderCallContext,
+} from "../../provider-usage/domain/provider-usage";
+
+export interface MeteredResearchProvider {
+  research(
+    prompt: ResearchPrompt,
+    signal: AbortSignal,
+  ): Promise<MeteredProviderResult<ResearchBundle>>;
+}
+
+export interface MeteredRecommendationProvider {
+  generate(
+    prompt: ResearchPrompt,
+    research: ResearchBundle,
+    signal: AbortSignal,
+  ): Promise<MeteredProviderResult<ProjectRecommendation[]>>;
+}
 
 export interface ResearchProvider {
-  research(prompt: ResearchPrompt, signal: AbortSignal): Promise<ResearchBundle>;
+  research(
+    prompt: ResearchPrompt,
+    signal: AbortSignal,
+    context: ProviderCallContext,
+  ): Promise<ResearchBundle>;
 }
 
 export interface RecommendationProvider {
@@ -16,11 +39,16 @@ export interface RecommendationProvider {
     prompt: ResearchPrompt,
     research: ResearchBundle,
     signal: AbortSignal,
+    context: ProviderCallContext,
   ): Promise<ProjectRecommendation[]>;
 }
 
 export interface ResearchUseCase {
-  execute(prompt: ResearchPrompt, signal: AbortSignal): Promise<ResearchReport>;
+  execute(
+    prompt: ResearchPrompt,
+    signal: AbortSignal,
+    context: ProviderCallContext,
+  ): Promise<ResearchReport>;
 }
 
 export interface ResearchReportWriter {
@@ -50,6 +78,9 @@ export interface ResearchPersistenceJobStore {
 
 export type ResearchExecutionContext = Readonly<{
   usageReservationId?: string;
+  internalRequestId?: string;
+  idempotencyKey?: string;
+  retryCount?: number;
 }>;
 
 export interface ResearchWorkflow {
