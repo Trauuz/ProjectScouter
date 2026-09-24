@@ -15,6 +15,8 @@
 
 # Dependencies
 /node_modules/
+/.npm/
+/.pnpm-store/
 /.pnp
 .pnp.*
 /.yarn/*
@@ -26,25 +28,96 @@
 # Next.js generated output
 /.next/
 /out/
+/.output/
 
 # Production build output
 /build/
+/dist/
 
 # Test and coverage output
 /coverage/
 /.nyc_output/
 /test-results/
 /playwright-report/
+/blob-report/
+/.playwright/
+/junit.xml
+/coverage-final.json
 *.lcov
 
 # Environment files and secrets
-.env*
-!.env.example
-!.env.*.example
+.env
+.env.*
+*.env
+*.env.*
+.envrc
+/.direnv/
+/.secrets/
+/secrets/
+*.secret
+*.secrets
+credentials*.json
+service-account*.json
+*-service-account.json
+google-credentials*.json
+*.credentials
+*.token
+*.private
+storage-state*.json
+*.har
+trace.zip
+
+# Private keys, signing material, and local credential stores
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+*.der
+*.csr
+*.mobileprovision
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+.npmrc
+.yarnrc
+.yarnrc.yml
+.netrc
+_netrc
+/.aws/
+/.gcloud/
+/.supabase/
+/supabase/.temp/
+/.wrangler/
+.dev.vars
+.dev.vars.*
+.sentryclirc
 
 # Deployment platform state
 /.vercel/
 /.netlify/
+
+# Infrastructure state and generated plans
+/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+
+# Local databases, exports, and backups that may contain user data
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.dump
+*.backup
+*.sql.gz
 
 # TypeScript and tooling caches
 *.tsbuildinfo
@@ -53,6 +126,7 @@ next-env.d.ts
 /.cache/
 /.turbo/
 /.vitest/
+/.stylelintcache
 
 # Debug output
 npm-debug.log*

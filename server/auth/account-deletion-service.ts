@@ -13,14 +13,15 @@ import { deleteSupabaseAuthUser } from "./supabase-auth-user-deletion";
 
 function dependencies(): AccountDeletionDependencies {
   const repository = getAccountDeletionRepository();
-  const admin = createSupabaseAdminClient();
   return {
     repository,
-    deleteAuthenticationUser: (userId) =>
-      deleteSupabaseAuthUser(
+    deleteAuthenticationUser: (userId) => {
+      const admin = createSupabaseAdminClient();
+      return deleteSupabaseAuthUser(
         userId,
         (subjectId) => admin.auth.admin.deleteUser(subjectId),
-      ),
+      );
+    },
     deleteApplicationData: deleteAccountData,
   };
 }

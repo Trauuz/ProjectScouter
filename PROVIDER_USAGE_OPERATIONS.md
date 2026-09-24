@@ -33,10 +33,11 @@ reservation is not completed.
 
 ## Required configuration
 
-All ceilings and prices are validated before production starts. See
-`.env.example` for every variable. Values ending in `MICRODOLLARS` are integer
-millionths of one US dollar; token prices are microdollars per one million
-tokens. This avoids floating-point money calculations.
+All ceilings and prices are validated before production starts. The ignored
+local `.env` contains every variable required by the validator. Values ending in
+`MICRODOLLARS` are integer millionths of one US dollar; token prices are
+microdollars per one million tokens. This avoids floating-point money
+calculations.
 
 - `ACCOUNT_MONTHLY_RESEARCH_LIMIT` protects each account.
 - `RESEARCH_PROVIDER_MONTHLY_CREDIT_CEILING` and

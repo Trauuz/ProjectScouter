@@ -9,7 +9,7 @@ file, client-side setting, build log, or support ticket.
 Set `ACCOUNT_DELETION_WORKER_SECRET` to an independently generated random value
 of at least 32 characters in the same server-only secret manager. Configure the
 platform scheduler to send `POST /api/internal/account-deletions` with that value
-as a bearer token. Local secret values belong in ignored `.env.local` files.
+as a bearer token. Local secret values belong in the ignored `.env` file.
 
 `npm run validate:deployment` loads production environment files using Next.js's
 normal precedence, validates required variables, and prints only variable names
