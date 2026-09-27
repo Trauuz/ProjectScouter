@@ -124,7 +124,7 @@ export function MotionScene({ children }: { children: ReactNode }) {
               scrollTrigger: {
                 trigger: ".direction-cta",
                 start: "top 78%",
-                once: true,
+                toggleActions: "play reverse play reverse",
               },
             },
           );

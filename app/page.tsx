@@ -1,5 +1,12 @@
-import { LandingPage } from "@/features/landing";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+import { LandingPage } from "@/features/landing";
+import { getOptionalAuthIdentity } from "@/server/auth/get-auth-identity";
+
+export default async function Home() {
+  if (await getOptionalAuthIdentity()) {
+    redirect("/research");
+  }
+
   return <LandingPage />;
 }

@@ -1,11 +1,13 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createAuthIdentity, type AuthIdentity } from "@/shared/auth/auth-identity";
 
 import { canRunResearch } from "./account-deletion-service";
 import { createSupabaseServerClient } from "./supabase-server-client";
 
-export async function getOptionalAuthIdentity(): Promise<AuthIdentity | null> {
+export const getOptionalAuthIdentity = cache(async function getOptionalAuthIdentity(): Promise<AuthIdentity | null> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return null;
@@ -23,7 +25,7 @@ export async function getOptionalAuthIdentity(): Promise<AuthIdentity | null> {
   } catch {
     return null;
   }
-}
+});
 
 export async function getActiveAuthIdentity(): Promise<AuthIdentity | null> {
   const identity = await getOptionalAuthIdentity();

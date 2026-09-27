@@ -27,6 +27,7 @@ const RESPONSE_HEADERS = {
 type Dependencies = {
   workflow: ResearchWorkflow;
   rateLimiter: RateLimiter;
+  requestTimeoutMs?: number;
   usageMeter?: Pick<MonthlyUsageMeter, "reserve">;
   accountAccess?: {
     canResearch(userId: string): Promise<boolean>;
@@ -183,6 +184,7 @@ async function readPrompt(request: Request): Promise<ResearchPrompt> {
 export function createResearchPostHandler({
   workflow,
   rateLimiter,
+  requestTimeoutMs = REQUEST_TIMEOUT_MS,
   usageMeter,
   accountAccess,
   diagnostics = DEFAULT_DIAGNOSTICS,
@@ -288,7 +290,7 @@ export function createResearchPostHandler({
       }
       const signal = AbortSignal.any([
         request.signal,
-        AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        AbortSignal.timeout(requestTimeoutMs),
       ]);
       const internalRequestId = crypto.randomUUID();
       const result = await workflow.execute(prompt, owner, signal, {
@@ -343,7 +345,10 @@ export function createResearchPostHandler({
         return failureResponse(reason, diagnostics);
       }
 
-      if (reason instanceof DOMException && reason.name === "AbortError") {
+      if (
+        reason instanceof DOMException &&
+        (reason.name === "AbortError" || reason.name === "TimeoutError")
+      ) {
         diagnostics.reportFailure(reason);
         return errorResponse(
           504,

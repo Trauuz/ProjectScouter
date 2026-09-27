@@ -15,7 +15,6 @@ const trustPoints = [
   "Beginner-friendly scope",
 ] as const;
 
-// ... (keep the rest of constants) ...
 const evidenceStages = [
   {
     kind: "Observed evidence",
@@ -145,7 +144,7 @@ export function TrustStrip() {
           scrollTrigger: { 
             trigger: container.current, 
             start: "top 85%", 
-            once: true,
+            toggleActions: "play reverse play reverse",
           },
           autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out"
         });
@@ -153,7 +152,7 @@ export function TrustStrip() {
           scrollTrigger: { 
             trigger: container.current, 
             start: "top 85%", 
-            once: true,
+            toggleActions: "play reverse play reverse",
           },
           scaleX: 1, duration: 0.6, stagger: 0.1, ease: "power2.out", delay: 0.3
         });
@@ -162,7 +161,7 @@ export function TrustStrip() {
   }, { scope: container });
 
   return (
-    <section className={styles.trust} id="trust" aria-label="What ProjectScout prioritizes" ref={container}>
+    <section className={`${styles.trust} landing-story-module`} id="trust" aria-label="What ProjectScout prioritizes" ref={container}>
       <span className={"trust-elem " + styles.eyebrow}>Research workflow priorities</span>
       <ul className={styles.trustList}>
         {trustPoints.map((point, i) => (
@@ -200,11 +199,21 @@ export function LandingStory() {
         setInitial(".evidence-line", { scaleX: 0, scaleY: 0 });
         setInitial(".evidence-node-inner", { scale: 0, autoAlpha: 0 });
 
+        // Example
+        setInitial(".example-intro .intro-heading, .example-intro .intro-desc", { autoAlpha: 0, y: 20 });
+        setInitial(".example-dossier", { autoAlpha: 0, y: 24 });
+        setInitial(".example-detail", { autoAlpha: 0, y: 16 });
+
         // Directions
         setInitial(".dir-intro .intro-heading, .dir-intro .intro-desc", { autoAlpha: 0, y: 20 });
         setInitial(".dir-topic", { autoAlpha: 0, scale: 0.95 });
         setInitial(".dir-svg path", { strokeDasharray: "200", strokeDashoffset: 200 });
         setInitial(".dir-card", { autoAlpha: 0, y: 30 });
+
+        // Weak evidence
+        setInitial(".weak-intro .intro-heading, .weak-intro .intro-desc", { autoAlpha: 0, y: 20 });
+        setInitial(".weak-card", { autoAlpha: 0, y: 24 });
+        setInitial(".weak-connector", { autoAlpha: 0, scale: 0.7 });
 
         // Audience
         setInitial(".aud-intro .intro-heading, .aud-intro .intro-desc", { autoAlpha: 0, y: 20 });
@@ -224,26 +233,38 @@ export function LandingStory() {
         if (reduceMotion) return;
 
         // Animations
-        const evTl = gsap.timeline({ scrollTrigger: { trigger: "#evidence", start: "top 85%", once: true } });
+        const exampleTl = gsap.timeline({ scrollTrigger: { trigger: "#example", start: "top 85%", toggleActions: "play reverse play reverse" } });
+        exampleTl.to(".example-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
+                 .to(".example-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
+                 .to(".example-dossier", { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out" }, "-=0.15")
+                 .to(".example-detail", { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.12 }, "-=0.25");
+
+        const evTl = gsap.timeline({ scrollTrigger: { trigger: "#evidence", start: "top 85%", toggleActions: "play reverse play reverse" } });
         evTl.to(".ev-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
             .to(".ev-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
             .to(".evidence-node", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.3 }, "-=0.2")
             .to(".evidence-line", { scaleX: 1, scaleY: 1, duration: 0.4, stagger: 0.3 }, "-=1.2")
             .to(".evidence-node-inner", { autoAlpha: 1, scale: 1, duration: 0.3, stagger: 0.3 }, "-=1.1");
 
-        const dirTl = gsap.timeline({ scrollTrigger: { trigger: "#directions", start: "top 85%", once: true } });
+        const dirTl = gsap.timeline({ scrollTrigger: { trigger: "#directions", start: "top 85%", toggleActions: "play reverse play reverse" } });
         dirTl.to(".dir-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
              .to(".dir-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
              .to(".dir-topic", { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(1.2)" }, "-=0.2")
              .to(".dir-svg path", { strokeDashoffset: 0, duration: 0.6, stagger: 0.1, ease: "power2.inOut" })
              .to(".dir-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power2.out" }, "-=0.4");
 
-        const audTl = gsap.timeline({ scrollTrigger: { trigger: "#audience", start: "top 85%", once: true } });
+        const weakTl = gsap.timeline({ scrollTrigger: { trigger: "#weak-evidence", start: "top 85%", toggleActions: "play reverse play reverse" } });
+        weakTl.to(".weak-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
+              .to(".weak-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
+              .to(".weak-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.16, ease: "power2.out" }, "-=0.15")
+              .to(".weak-connector", { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power2.out" }, "-=0.55");
+
+        const audTl = gsap.timeline({ scrollTrigger: { trigger: "#audience", start: "top 85%", toggleActions: "play reverse play reverse" } });
         audTl.to(".aud-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
              .to(".aud-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
              .to(".aud-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, "-=0.2");
 
-        const transTl = gsap.timeline({ scrollTrigger: { trigger: "#before-after", start: "top 85%", once: true } });
+        const transTl = gsap.timeline({ scrollTrigger: { trigger: "#before-after", start: "top 85%", toggleActions: "play reverse play reverse" } });
         transTl.to(".trans-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
                .to(".trans-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
                .to(".trans-before", { autoAlpha: 1, x: 0, duration: 0.6, ease: "power2.out" }, "-=0.1")
@@ -251,7 +272,7 @@ export function LandingStory() {
                .to(".trans-after", { autoAlpha: 1, x: 0, duration: 0.6, ease: "power2.out" }, "-=0.2")
                .to(".trans-highlight", { backgroundColor: "var(--color-accent-soft)", duration: 0.8, stagger: 0.15 }, "-=0.1");
 
-        const princTl = gsap.timeline({ scrollTrigger: { trigger: "#principles", start: "top 85%", once: true } });
+        const princTl = gsap.timeline({ scrollTrigger: { trigger: "#principles", start: "top 85%", toggleActions: "play reverse play reverse" } });
         princTl.to(".princ-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
                .to(".princ-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
                .to(".princ-item", { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.2, ease: "power2.out" }, "-=0.2");
@@ -261,7 +282,45 @@ export function LandingStory() {
 
   return (
     <div ref={container}>
-      <section className={styles.storySection} id="evidence" aria-labelledby="evidence-title">
+      <section className={`${styles.storySection} landing-story-module`} id="example" aria-labelledby="example-title">
+        <div className="example-intro">
+          <SectionIntro
+            headingId="example-title"
+            title="See the shape of a defensible brief."
+            description="An output keeps the observed pattern, ProjectScout’s interpretation, and the next validation step visibly separate."
+          />
+        </div>
+        <article className={`${styles.exampleDossier} example-dossier`} aria-labelledby="example-dossier-title">
+          <header className={styles.exampleHeader}>
+            <span className={styles.eyebrow}>Illustrative project brief</span>
+            <h3 id="example-dossier-title">Campus Momentum</h3>
+            <p>A lightweight accountability tool for students whose workout plans break when schedules stop aligning.</p>
+          </header>
+          <div className={styles.exampleBody}>
+            <section className={`${styles.exampleEvidence} example-detail`} aria-labelledby="example-evidence-title">
+              <h4 id="example-evidence-title">Observed pattern</h4>
+              <p className={styles.exampleFinding}>Students repeatedly describe motivation and scheduling as linked problems.</p>
+              <p>Composite research pattern for demonstration, not a quotation or a market-wide claim.</p>
+            </section>
+            <dl className={styles.exampleDetails}>
+              <div className="example-detail">
+                <dt>Interpretation</dt>
+                <dd>A reliable partner may matter more than another general workout plan.</dd>
+              </div>
+              <div className="example-detail">
+                <dt>Evidence strength</dt>
+                <dd>Moderate — the problem recurs, but willingness to adopt a dedicated tool is unproven.</dd>
+              </div>
+              <div className="example-detail">
+                <dt>Next test</dt>
+                <dd>Run a two-week matching pilot with one campus group before building automation.</dd>
+              </div>
+            </dl>
+          </div>
+        </article>
+      </section>
+
+      <section className={`${styles.storySection} landing-story-module`} id="evidence" aria-labelledby="evidence-title">
         <div className="ev-intro">
           <SectionIntro
             headingId="evidence-title"
@@ -288,7 +347,7 @@ export function LandingStory() {
         </div>
       </section>
 
-      <section className={styles.storySection} id="directions" aria-labelledby="directions-title">
+      <section className={`${styles.storySection} landing-story-module`} id="directions" aria-labelledby="directions-title">
         <div className="dir-intro">
           <SectionIntro
             headingId="directions-title"
@@ -334,7 +393,36 @@ export function LandingStory() {
         </div>
       </section>
 
-      <section className={styles.storySection} id="audience" aria-labelledby="audience-title">
+      <section className={`${styles.storySection} landing-story-module`} id="weak-evidence" aria-labelledby="weak-evidence-title">
+        <div className="weak-intro">
+          <SectionIntro
+            headingId="weak-evidence-title"
+            title="Weak evidence changes the recommendation."
+            description="A thin signal should narrow the claim and increase the need for validation—not disappear behind confident language."
+          />
+        </div>
+        <div className={styles.weakEvidenceFlow}>
+          <article className={`${styles.weakEvidenceCard} weak-card`} data-kind="signal">
+            <span className={styles.eyebrow}>What the evidence supports</span>
+            <h3>A restart problem appears.</h3>
+            <ul>
+              <li>A small number of people describe losing momentum after a break.</li>
+              <li>The sources do not establish demand for a standalone product.</li>
+            </ul>
+          </article>
+          <div className={`${styles.weakEvidenceConnector} weak-connector`} aria-hidden="true" />
+          <article className={`${styles.weakEvidenceCard} weak-card`} data-kind="response">
+            <span className={styles.eyebrow}>How the brief responds</span>
+            <h3>Scope a test, not a verdict.</h3>
+            <ul>
+              <li>Label the direction as weak evidence.</li>
+              <li>Recommend a seven-day manual pilot before a larger build.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section className={`${styles.storySection} landing-story-module`} id="audience" aria-labelledby="audience-title">
         <div className="aud-intro">
           <SectionIntro
             headingId="audience-title"
@@ -352,7 +440,7 @@ export function LandingStory() {
         </dl>
       </section>
 
-      <section className={styles.transformation} id="before-after" aria-labelledby="transformation-title">
+      <section className={`${styles.transformation} landing-story-module`} id="before-after" aria-labelledby="transformation-title">
         <div className="trans-intro">
           <SectionIntro
             headingId="transformation-title"
@@ -380,7 +468,7 @@ export function LandingStory() {
         </div>
       </section>
 
-      <section className={styles.storySection} id="principles" aria-labelledby="principles-title">
+      <section className={`${styles.storySection} landing-story-module`} id="principles" aria-labelledby="principles-title">
         <div className="princ-intro">
           <SectionIntro
             headingId="principles-title"

@@ -183,7 +183,7 @@
   border: var(--rule-hairline) solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-ink-soft);
+  color: var(--color-accent-dark);
   font-size: var(--text-sm);
   text-decoration: underline;
   text-decoration-thickness: var(--rule-hairline);

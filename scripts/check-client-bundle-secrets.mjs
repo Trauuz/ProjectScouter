@@ -1,5 +1,8 @@
+import nextEnvironment from "@next/env";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
+
+nextEnvironment.loadEnvConfig(process.cwd(), false);
 
 const browserAssetsDirectory = join(process.cwd(), ".next", "static");
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();

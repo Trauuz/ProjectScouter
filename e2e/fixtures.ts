@@ -1,4 +1,10 @@
-import { test as base, expect, type Page, type Route } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+  type Route,
+} from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const TEST_USER_ID = "05eb1d2c-a1ec-43f0-8967-24299194382a";
@@ -83,6 +89,7 @@ const RESEARCH_RESPONSE = {
 
 export type FakeBackend = {
   researchRequests: number;
+  researchPrompts: string[];
   accountDeletionRequests: number;
   authOperations: string[];
   researchDelayMs: number;
@@ -129,41 +136,60 @@ async function mockSupabase(route: Route, backend: FakeBackend): Promise<void> {
   await route.fulfill({ status: 404, json: { message: "Unhandled test route" }, headers });
 }
 
+export async function installFakeBackend(
+  target: BrowserContext | Page,
+  backend: FakeBackend,
+): Promise<void> {
+  await target.route("http://127.0.0.1:54321/**", (route) =>
+    mockSupabase(route, backend));
+  await target.route("**/api/research", async (route) => {
+    backend.researchRequests += 1;
+    const requestBody = route.request().postDataJSON() as { prompt?: unknown };
+    const prompt = typeof requestBody.prompt === "string"
+      ? requestBody.prompt
+      : RESEARCH_RESPONSE.report.prompt;
+    backend.researchPrompts.push(prompt);
+    if (backend.researchDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, backend.researchDelayMs));
+    }
+    await route.fulfill({
+      status: 200,
+      json: {
+        ...RESEARCH_RESPONSE,
+        report: { ...RESEARCH_RESPONSE.report, prompt },
+      },
+    });
+  });
+  await target.route("**/api/auth/claim-runs", (route) =>
+    route.fulfill({ status: 200, json: { attached: 0 } }));
+  await target.route("**/api/usage", (route) => route.fulfill({
+    status: 200,
+    json: {
+      limit: 5,
+      used: 0,
+      remaining: 5,
+      periodStart: "2026-09-01",
+      resetsAt: "2026-10-01T00:00:00.000Z",
+    },
+  }));
+  await target.route("**/api/account", (route) => {
+    backend.accountDeletionRequests += 1;
+    return route.fulfill({ status: 204, body: "" });
+  });
+  await target.route("https://**/*", (route) => route.abort("blockedbyclient"));
+}
+
 export const test = base.extend<{ backend: FakeBackend }>({
   backend: [async ({ page }, use) => {
     const backend: FakeBackend = {
       researchRequests: 0,
+      researchPrompts: [],
       accountDeletionRequests: 0,
       authOperations: [],
       researchDelayMs: 0,
     };
 
-    await page.route("http://127.0.0.1:54321/**", (route) =>
-      mockSupabase(route, backend));
-    await page.route("**/api/research", async (route) => {
-      backend.researchRequests += 1;
-      if (backend.researchDelayMs) {
-        await new Promise((resolve) => setTimeout(resolve, backend.researchDelayMs));
-      }
-      await route.fulfill({ status: 200, json: RESEARCH_RESPONSE });
-    });
-    await page.route("**/api/auth/claim-runs", (route) =>
-      route.fulfill({ status: 200, json: { attached: 0 } }));
-    await page.route("**/api/usage", (route) => route.fulfill({
-      status: 200,
-      json: {
-        limit: 5,
-        used: 0,
-        remaining: 5,
-        periodStart: "2026-09-01",
-        resetsAt: "2026-10-01T00:00:00.000Z",
-      },
-    }));
-    await page.route("**/api/account", (route) => {
-      backend.accountDeletionRequests += 1;
-      return route.fulfill({ status: 204, body: "" });
-    });
-    await page.route("https://**/*", (route) => route.abort("blockedbyclient"));
+    await installFakeBackend(page, backend);
 
     await use(backend);
   }, { auto: true }],

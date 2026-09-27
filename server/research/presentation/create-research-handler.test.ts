@@ -384,6 +384,37 @@ describe("createResearchPostHandler rate limiting", () => {
     expect(reservation.complete).not.toHaveBeenCalled();
   });
 
+  it("aborts a stalled workflow at the request deadline", async () => {
+    const execute = vi.fn((
+      _prompt,
+      _owner,
+      signal: AbortSignal,
+    ) => new Promise((_, reject) => {
+      signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+    }));
+    const reportFailure = vi.fn();
+    const handler = createResearchPostHandler({
+      workflow: { execute } as ResearchWorkflow,
+      rateLimiter: new MemoryRateLimiter({ maxRequests: 1, windowMs: 60_000 }),
+      requestTimeoutMs: 10,
+      diagnostics: { exposeDetails: false, reportFailure },
+    });
+
+    const response = await handler(
+      researchRequest("198.51.100.10", "198.51.100.11"),
+      authenticatedOwner(),
+    );
+
+    expect(response.status).toBe(504);
+    expect(await response.json()).toEqual({ error: {
+      code: "UPSTREAM_TIMEOUT",
+      message: "Research took too long. Please try again.",
+      retryable: true,
+    } });
+    expect(execute).toHaveBeenCalledOnce();
+    expect(reportFailure).toHaveBeenCalledOnce();
+  });
+
   it("returns 202 and keeps the reservation pending while durable persistence is retryable", async () => {
     const reservation = {
       complete: vi.fn().mockResolvedValue(undefined),
