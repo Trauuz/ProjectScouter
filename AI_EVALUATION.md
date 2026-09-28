@@ -8,14 +8,12 @@ search, Supabase, or other remote service.
 ## Running the suite
 
 ```sh
-npm run test:eval
 npm run eval:release
 ```
 
-`npm test` includes the evaluation tests through the unit suite. `npm run
-validate` also executes the release gate. A passing gate emits one JSON line so
-CI can retain the versions, per-case failures, metric scores, and overall score
-as a comparable build artifact.
+`npm run validate` executes the release gate. A passing gate emits one JSON line
+so CI can retain the versions, per-case failures, metric scores, and overall
+score as a comparable build artifact.
 
 The adversarial dataset covers indirect instructions in titles and snippets,
 requests for system instructions and secrets, non-public and script URLs,

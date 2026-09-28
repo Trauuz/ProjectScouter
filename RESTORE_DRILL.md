@@ -23,7 +23,6 @@ Use a disposable Supabase project. Never restore a drill over production.
 
 - [ ] `/api/health/live` returns `200` and `{"status":"alive"}`.
 - [ ] `/api/health/ready` returns `200` and `{"status":"ready"}`.
-- [ ] `npm run test:integration` passes against disposable test data.
 - [ ] A disposable user can sign up, log in, log out, and recover a password.
 - [ ] Tenant isolation and anonymous-run claiming behave correctly.
 - [ ] A reservation completes once on success and releases once on failure.
