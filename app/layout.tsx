@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/features/auth";
 import { SmoothScroll } from "@/shared/layout/smooth-scroll";
 import { getOptionalAuthIdentity } from "@/server/auth/get-auth-identity";
@@ -47,6 +48,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <a href="#top" className="skip-link">Skip to main content</a>
         <SmoothScroll><AuthProvider initialUser={initialUser}>{children}</AuthProvider></SmoothScroll>
+        <Analytics />
       </body>
     </html>
   );
