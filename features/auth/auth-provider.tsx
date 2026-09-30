@@ -1,7 +1,7 @@
 "use client";
 
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createAuthIdentity, type AuthIdentity } from "@/shared/auth/auth-identity";
@@ -38,7 +38,6 @@ export function AuthProvider({
   initialUser: AuthIdentity | null;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [user, setUser] = useState(initialUser);
   const [ready, setReady] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -70,11 +69,11 @@ export function AuthProvider({
     return true;
   }, [pendingStore, router]);
 
-  const continueAuthenticatedSession = useCallback(() => {
-    if (!resumePendingIntent() && pathname === "/") {
+  const continueAfterAuthentication = useCallback(() => {
+    if (!resumePendingIntent()) {
       router.replace("/research");
     }
-  }, [pathname, resumePendingIntent, router]);
+  }, [resumePendingIntent, router]);
 
   const finishAuthentication = useCallback(
     (authenticatedUser: { id: string; email?: string } | null) => {
@@ -82,10 +81,10 @@ export function AuthProvider({
       setUser(identity);
       setIsOpen(false);
       if (identity && !recoveryModeRef.current) {
-        continueAuthenticatedSession();
+        continueAfterAuthentication();
       }
     },
-    [continueAuthenticatedSession],
+    [continueAfterAuthentication],
   );
 
   useEffect(() => {
@@ -128,7 +127,7 @@ export function AuthProvider({
       setUser(identity);
       setReady(true);
       if (identity && !recoveryModeRef.current) {
-        continueAuthenticatedSession();
+        resumePendingIntent();
       }
     });
 
@@ -148,7 +147,7 @@ export function AuthProvider({
 
       if (event === "SIGNED_IN" && identity && !recoveryModeRef.current) {
         setIsOpen(false);
-        continueAuthenticatedSession();
+        resumePendingIntent();
       }
     });
 
@@ -156,7 +155,7 @@ export function AuthProvider({
       window.clearTimeout(queryTimer);
       data.subscription.unsubscribe();
     };
-  }, [continueAuthenticatedSession]);
+  }, [resumePendingIntent]);
 
   const openAuth = useCallback(
     (nextMode: AuthMode = "login", intent?: NewPendingAuthIntent) => {

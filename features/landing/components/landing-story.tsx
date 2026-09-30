@@ -199,11 +199,6 @@ export function LandingStory() {
         setInitial(".evidence-line", { scaleX: 0, scaleY: 0 });
         setInitial(".evidence-node-inner", { scale: 0, autoAlpha: 0 });
 
-        // Example
-        setInitial(".example-intro .intro-heading, .example-intro .intro-desc", { autoAlpha: 0, y: 20 });
-        setInitial(".example-dossier", { autoAlpha: 0, y: 24 });
-        setInitial(".example-detail", { autoAlpha: 0, y: 16 });
-
         // Directions
         setInitial(".dir-intro .intro-heading, .dir-intro .intro-desc", { autoAlpha: 0, y: 20 });
         setInitial(".dir-topic", { autoAlpha: 0, scale: 0.95 });
@@ -233,12 +228,6 @@ export function LandingStory() {
         if (reduceMotion) return;
 
         // Animations
-        const exampleTl = gsap.timeline({ scrollTrigger: { trigger: "#example", start: "top 85%", toggleActions: "play reverse play reverse" } });
-        exampleTl.to(".example-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
-                 .to(".example-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
-                 .to(".example-dossier", { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out" }, "-=0.15")
-                 .to(".example-detail", { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.12 }, "-=0.25");
-
         const evTl = gsap.timeline({ scrollTrigger: { trigger: "#evidence", start: "top 85%", toggleActions: "play reverse play reverse" } });
         evTl.to(".ev-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
             .to(".ev-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
@@ -282,44 +271,6 @@ export function LandingStory() {
 
   return (
     <div ref={container}>
-      <section className={`${styles.storySection} landing-story-module`} id="example" aria-labelledby="example-title">
-        <div className="example-intro">
-          <SectionIntro
-            headingId="example-title"
-            title="See the shape of a defensible brief."
-            description="An output keeps the observed pattern, ProjectScout’s interpretation, and the next validation step visibly separate."
-          />
-        </div>
-        <article className={`${styles.exampleDossier} example-dossier`} aria-labelledby="example-dossier-title">
-          <header className={styles.exampleHeader}>
-            <span className={styles.eyebrow}>Illustrative project brief</span>
-            <h3 id="example-dossier-title">Campus Momentum</h3>
-            <p>A lightweight accountability tool for students whose workout plans break when schedules stop aligning.</p>
-          </header>
-          <div className={styles.exampleBody}>
-            <section className={`${styles.exampleEvidence} example-detail`} aria-labelledby="example-evidence-title">
-              <h4 id="example-evidence-title">Observed pattern</h4>
-              <p className={styles.exampleFinding}>Students repeatedly describe motivation and scheduling as linked problems.</p>
-              <p>Composite research pattern for demonstration, not a quotation or a market-wide claim.</p>
-            </section>
-            <dl className={styles.exampleDetails}>
-              <div className="example-detail">
-                <dt>Interpretation</dt>
-                <dd>A reliable partner may matter more than another general workout plan.</dd>
-              </div>
-              <div className="example-detail">
-                <dt>Evidence strength</dt>
-                <dd>Moderate — the problem recurs, but willingness to adopt a dedicated tool is unproven.</dd>
-              </div>
-              <div className="example-detail">
-                <dt>Next test</dt>
-                <dd>Run a two-week matching pilot with one campus group before building automation.</dd>
-              </div>
-            </dl>
-          </div>
-        </article>
-      </section>
-
       <section className={`${styles.storySection} landing-story-module`} id="evidence" aria-labelledby="evidence-title">
         <div className="ev-intro">
           <SectionIntro

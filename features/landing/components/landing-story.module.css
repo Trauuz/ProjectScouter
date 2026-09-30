@@ -113,95 +113,6 @@
   line-height: 1.65;
 }
 
-/* Example dossier */
-.exampleDossier {
-  display: grid;
-  max-width: 68rem;
-  margin-inline: auto;
-  overflow: clip;
-  border: var(--rule-hairline) solid var(--color-rule);
-  border-radius: var(--radius-md);
-  background: var(--color-paper);
-  box-shadow: 0 var(--space-sm) var(--space-xl) var(--color-workspace-shadow);
-}
-
-.exampleHeader {
-  display: grid;
-  gap: var(--space-sm);
-  padding: clamp(var(--space-xl), 5vw, var(--space-3xl));
-  border-block-end: var(--rule-hairline) solid var(--color-rule);
-  background: var(--color-workspace-soft);
-}
-
-.exampleHeader h3 {
-  min-width: 0;
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: clamp(var(--text-xl), 4vw, var(--text-2xl));
-  font-weight: 600;
-  line-height: 1.08;
-  overflow-wrap: anywhere;
-}
-
-.exampleHeader p {
-  max-width: 48rem;
-  color: var(--color-ink-soft);
-  font-size: var(--text-base);
-  line-height: 1.65;
-}
-
-.exampleBody {
-  display: grid;
-  min-width: 0;
-}
-
-.exampleEvidence,
-.exampleDetails > div {
-  display: grid;
-  align-content: start;
-  gap: var(--space-sm);
-  min-width: 0;
-  padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
-}
-
-.exampleEvidence {
-  border-block-end: var(--rule-hairline) solid var(--color-rule);
-}
-
-.exampleEvidence h4,
-.exampleDetails dt {
-  color: var(--color-ink-faint);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.exampleFinding {
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.exampleEvidence > p:last-child,
-.exampleDetails dd {
-  margin: 0;
-  color: var(--color-ink-soft);
-  font-size: var(--text-sm);
-  line-height: 1.6;
-}
-
-.exampleDetails {
-  display: grid;
-  margin: 0;
-}
-
-.exampleDetails > div + div {
-  border-block-start: var(--rule-hairline) solid var(--color-rule);
-}
-
 /* Evidence Pipeline */
 .evidencePipeline {
   display: flex;
@@ -608,15 +519,6 @@
   .evidencePipeline {
     flex-direction: row;
     max-width: 100%;
-  }
-
-  .exampleBody {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  }
-
-  .exampleEvidence {
-    border-block-end: 0;
-    border-inline-end: var(--rule-hairline) solid var(--color-rule);
   }
 
   .evidenceStage {

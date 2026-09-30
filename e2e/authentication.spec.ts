@@ -64,14 +64,26 @@ test("login and logout update navigation without production services", async ({ 
   expect(backend.authOperations.some((operation) => operation.includes("/logout"))).toBe(true);
 });
 
-test("a restored authenticated session redirects the root route to research", async ({ page }) => {
+test("an authenticated session can return to the landing page", async ({ page, backend }) => {
   await page.goto("/");
   await logIn(page);
   await expect(page).toHaveURL(/\/research(?:\?|$)/);
 
+  const userRequestsBeforeReturn = backend.authOperations.filter((operation) =>
+    operation.startsWith("GET /auth/v1/user")
+  ).length;
   await page.goto("/");
 
-  await expect(page).toHaveURL(/\/research(?:\?|$)/);
+  await expect.poll(() => backend.authOperations.filter((operation) =>
+    operation.startsWith("GET /auth/v1/user")
+  ).length).toBeGreaterThan(userRequestsBeforeReturn);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", {
+    level: 1,
+    name: "Build better projects. Start with evidence.",
+  })).toBeVisible();
+  await expect(page.locator(".site-header__action summary"))
+    .toHaveAccessibleName(`Account menu for ${TEST_EMAIL}`);
 });
 
 test("session survives closing and reopening a persistent browser", async ({ backend }, testInfo) => {
@@ -96,9 +108,19 @@ test("session survives closing and reopening a persistent browser", async ({ bac
     });
     await installFakeBackend(context, backend);
     persistentPage = context.pages()[0] ?? await context.newPage();
+    const userRequestsBeforeReopen = backend.authOperations.filter((operation) =>
+      operation.startsWith("GET /auth/v1/user")
+    ).length;
     await persistentPage.goto("/");
 
-    await expect(persistentPage).toHaveURL(/\/research(?:\?|$)/);
+    await expect.poll(() => backend.authOperations.filter((operation) =>
+      operation.startsWith("GET /auth/v1/user")
+    ).length).toBeGreaterThan(userRequestsBeforeReopen);
+    await expect(persistentPage).toHaveURL(/\/$/);
+    await expect(persistentPage.getByRole("heading", {
+      level: 1,
+      name: "Build better projects. Start with evidence.",
+    })).toBeVisible();
     await expect(persistentPage.locator(".site-header__action summary"))
       .toHaveAccessibleName(`Account menu for ${TEST_EMAIL}`);
   } finally {

@@ -12,6 +12,27 @@ const VIEWPORTS = [
   { width: 320, height: 720 },
 ] as const;
 
+test("direct hash entry hydrates the current landing-page markup", async ({ page }) => {
+  const hydrationFailures: string[] = [];
+  const recordHydrationFailure = (message: string) => {
+    if (message.includes("Hydration failed")) {
+      hydrationFailures.push(message);
+    }
+  };
+
+  page.on("console", (message) => recordHydrationFailure(message.text()));
+  page.on("pageerror", (error) => recordHydrationFailure(error.message));
+
+  await page.goto("/#how-it-works");
+  await expect(page.locator("#trust.landing-story-module")).toBeAttached();
+  await expect(page.locator("#example")).toHaveCount(0);
+  await expect(page.locator("#evidence-title")).toHaveText(
+    "Follow the evidence into the recommendation.",
+  );
+
+  expect(hydrationFailures).toEqual([]);
+});
+
 test("landing page remains usable without horizontal overflow at supported viewports", async ({ page }) => {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);
@@ -74,7 +95,6 @@ test("landing story animations reset above their triggers and replay", async ({ 
   await page.setViewportSize({ width: 1_440, height: 900 });
   await page.goto("/");
   const animatedSections = [
-    ["example", "example-title"],
     ["evidence", "evidence-title"],
     ["directions", "directions-title"],
     ["weak-evidence", "weak-evidence-title"],
@@ -108,7 +128,6 @@ test("every named landing story module renders as a distinct section", async ({ 
 
   const moduleIds = [
     "trust",
-    "example",
     "evidence",
     "directions",
     "weak-evidence",
