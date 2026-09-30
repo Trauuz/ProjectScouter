@@ -62,29 +62,6 @@ const directions = [
   },
 ] as const;
 
-const audiences = [
-  {
-    name: "Students",
-    description: "Turn a broad assignment theme into a project with a defensible problem and scope.",
-  },
-  {
-    name: "Beginner developers",
-    description: "Choose a direction that is useful without requiring an enterprise-sized build.",
-  },
-  {
-    name: "Hackathon teams",
-    description: "Compare viable directions before spending a short build window on the first idea mentioned.",
-  },
-  {
-    name: "Portfolio builders",
-    description: "Explain why a project exists, who it serves, and what evidence shaped the decision.",
-  },
-  {
-    name: "Coursework projects",
-    description: "Connect research, requirements, and a realistic implementation plan in one narrative.",
-  },
-] as const;
-
 const principles = [
   {
     title: "Source-backed recommendations",
@@ -205,15 +182,6 @@ export function LandingStory() {
         setInitial(".dir-svg path", { strokeDasharray: "200", strokeDashoffset: 200 });
         setInitial(".dir-card", { autoAlpha: 0, y: 30 });
 
-        // Weak evidence
-        setInitial(".weak-intro .intro-heading, .weak-intro .intro-desc", { autoAlpha: 0, y: 20 });
-        setInitial(".weak-card", { autoAlpha: 0, y: 24 });
-        setInitial(".weak-connector", { autoAlpha: 0, scale: 0.7 });
-
-        // Audience
-        setInitial(".aud-intro .intro-heading, .aud-intro .intro-desc", { autoAlpha: 0, y: 20 });
-        setInitial(".aud-card", { autoAlpha: 0, y: 30 });
-
         // Before/After
         setInitial(".trans-intro .intro-heading, .trans-intro .intro-desc", { autoAlpha: 0, y: 20 });
         setInitial(".trans-before", { autoAlpha: 0, x: -30 });
@@ -241,17 +209,6 @@ export function LandingStory() {
              .to(".dir-topic", { autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(1.2)" }, "-=0.2")
              .to(".dir-svg path", { strokeDashoffset: 0, duration: 0.6, stagger: 0.1, ease: "power2.inOut" })
              .to(".dir-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power2.out" }, "-=0.4");
-
-        const weakTl = gsap.timeline({ scrollTrigger: { trigger: "#weak-evidence", start: "top 85%", toggleActions: "play reverse play reverse" } });
-        weakTl.to(".weak-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
-              .to(".weak-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
-              .to(".weak-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.16, ease: "power2.out" }, "-=0.15")
-              .to(".weak-connector", { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power2.out" }, "-=0.55");
-
-        const audTl = gsap.timeline({ scrollTrigger: { trigger: "#audience", start: "top 85%", toggleActions: "play reverse play reverse" } });
-        audTl.to(".aud-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
-             .to(".aud-intro .intro-desc", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.2")
-             .to(".aud-card", { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }, "-=0.2");
 
         const transTl = gsap.timeline({ scrollTrigger: { trigger: "#before-after", start: "top 85%", toggleActions: "play reverse play reverse" } });
         transTl.to(".trans-intro .intro-heading", { autoAlpha: 1, y: 0, duration: 0.4 })
@@ -342,53 +299,6 @@ export function LandingStory() {
             ))}
           </div>
         </div>
-      </section>
-
-      <section className={`${styles.storySection} landing-story-module`} id="weak-evidence" aria-labelledby="weak-evidence-title">
-        <div className="weak-intro">
-          <SectionIntro
-            headingId="weak-evidence-title"
-            title="Weak evidence changes the recommendation."
-            description="A thin signal should narrow the claim and increase the need for validation—not disappear behind confident language."
-          />
-        </div>
-        <div className={styles.weakEvidenceFlow}>
-          <article className={`${styles.weakEvidenceCard} weak-card`} data-kind="signal">
-            <span className={styles.eyebrow}>What the evidence supports</span>
-            <h3>A restart problem appears.</h3>
-            <ul>
-              <li>A small number of people describe losing momentum after a break.</li>
-              <li>The sources do not establish demand for a standalone product.</li>
-            </ul>
-          </article>
-          <div className={`${styles.weakEvidenceConnector} weak-connector`} aria-hidden="true" />
-          <article className={`${styles.weakEvidenceCard} weak-card`} data-kind="response">
-            <span className={styles.eyebrow}>How the brief responds</span>
-            <h3>Scope a test, not a verdict.</h3>
-            <ul>
-              <li>Label the direction as weak evidence.</li>
-              <li>Recommend a seven-day manual pilot before a larger build.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section className={`${styles.storySection} landing-story-module`} id="audience" aria-labelledby="audience-title">
-        <div className="aud-intro">
-          <SectionIntro
-            headingId="audience-title"
-            title="Research direction without a research department."
-            description="ProjectScout is built for people who need a clearer project decision without advanced market-research experience."
-          />
-        </div>
-        <dl className={styles.audienceGrid}>
-          {audiences.map((audience) => (
-            <div key={audience.name} className={styles.audienceCard + " aud-card"}>
-              <dt>{audience.name}</dt>
-              <dd>{audience.description}</dd>
-            </div>
-          ))}
-        </dl>
       </section>
 
       <section className={`${styles.transformation} landing-story-module`} id="before-after" aria-labelledby="transformation-title">

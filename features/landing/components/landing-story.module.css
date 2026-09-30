@@ -1,7 +1,7 @@
 /* Hallmark · macrostructure: Workbench · tone: editorial-technical · anchor hue: evidence-blue */
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
  * theme: existing ProjectScout system · enrichment: Tier-A evidence dossier and research flow
- * section-DNA: positioning rail · asymmetric dossier · evidence sequence · comparison · tabular audience · split transformation
+ * section-DNA: positioning rail · asymmetric dossier · evidence sequence · comparison · split transformation
  * nav: existing · footer: existing · slop: pass (58 / 58) · contrast: pass (40–41)
  * honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49)
  * icons: pass (30) · mobile: pass (34, 49, 50–57)
@@ -270,112 +270,6 @@
   line-height: 1.5;
 }
 
-/* Weak evidence decision rail */
-.weakEvidenceFlow {
-  display: grid;
-  gap: var(--space-lg);
-  max-width: 68rem;
-  margin-inline: auto;
-}
-
-.weakEvidenceCard {
-  display: grid;
-  align-content: start;
-  gap: var(--space-lg);
-  min-width: 0;
-  padding: clamp(var(--space-xl), 5vw, var(--space-3xl));
-  border: var(--rule-hairline) solid var(--color-rule);
-  border-radius: var(--radius-md);
-  background: var(--color-paper);
-}
-
-.weakEvidenceCard[data-kind="response"] {
-  border-color: var(--color-accent-dark);
-  background: var(--color-workspace-soft);
-}
-
-.weakEvidenceCard h3 {
-  min-width: 0;
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: clamp(var(--text-lg), 3vw, var(--text-xl));
-  font-weight: 600;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
-
-.weakEvidenceCard ul {
-  display: grid;
-  gap: var(--space-md);
-  margin: 0;
-  padding-inline-start: var(--space-lg);
-  color: var(--color-ink-soft);
-  font-size: var(--text-base);
-  line-height: 1.6;
-}
-
-.weakEvidenceCard li::marker {
-  color: var(--color-accent-dark);
-}
-
-.weakEvidenceConnector {
-  position: relative;
-  width: var(--rule-strong);
-  height: var(--space-2xl);
-  justify-self: center;
-  background: var(--color-accent-dark);
-  transform-origin: center;
-}
-
-.weakEvidenceConnector::after {
-  position: absolute;
-  inset-block-end: 0;
-  inset-inline-start: 50%;
-  width: var(--space-sm);
-  height: var(--space-sm);
-  border-inline-end: var(--rule-strong) solid var(--color-accent-dark);
-  border-block-end: var(--rule-strong) solid var(--color-accent-dark);
-  content: "";
-  transform: translate(-50%, 20%) rotate(45deg);
-}
-
-/* Audience */
-.audienceGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-lg);
-}
-
-.audienceCard {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-xl);
-  border: var(--rule-hairline) solid var(--color-rule);
-  border-radius: var(--radius-md);
-  background: var(--color-paper-raised);
-  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
-}
-
-.audienceCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 var(--space-md) var(--space-xl) var(--color-workspace-shadow);
-  border-color: var(--color-accent-soft);
-}
-
-.audienceCard dt {
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
-.audienceCard dd {
-  margin: 0;
-  color: var(--color-ink-soft);
-  font-size: var(--text-base);
-  line-height: 1.6;
-}
-
 /* Before / After */
 .transformation {
   display: grid;
@@ -499,13 +393,6 @@
     display: block;
   }
 
-  .audienceGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .audienceCard:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (min-width: 60rem) {
@@ -539,25 +426,6 @@
 
   .directionsGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .weakEvidenceFlow {
-    grid-template-columns: minmax(0, 1fr) var(--space-3xl) minmax(0, 1fr);
-    align-items: center;
-    gap: var(--space-lg);
-  }
-
-  .weakEvidenceConnector {
-    width: 100%;
-    height: var(--rule-strong);
-  }
-
-  .weakEvidenceConnector::after {
-    inset-block-start: 50%;
-    inset-block-end: auto;
-    inset-inline-start: auto;
-    inset-inline-end: 0;
-    transform: translate(20%, -50%) rotate(-45deg);
   }
 
   .transformationFlow {

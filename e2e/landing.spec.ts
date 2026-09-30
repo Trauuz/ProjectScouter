@@ -33,6 +33,19 @@ test("direct hash entry hydrates the current landing-page markup", async ({ page
   expect(hydrationFailures).toEqual([]);
 });
 
+test("removed landing-page sections are not rendered", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator("#weak-evidence")).toHaveCount(0);
+  await expect(page.locator("#audience")).toHaveCount(0);
+  await expect(page.getByRole("heading", {
+    name: "Weak evidence changes the recommendation.",
+  })).toHaveCount(0);
+  await expect(page.getByRole("heading", {
+    name: "Research direction without a research department.",
+  })).toHaveCount(0);
+});
+
 test("landing page remains usable without horizontal overflow at supported viewports", async ({ page }) => {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);
@@ -68,6 +81,24 @@ test("mobile navigation and legal pages are reachable", async ({ page }) => {
   }
 });
 
+test("legal policies disclose cookie-free Vercel Web Analytics", async ({ page }) => {
+  await page.goto("/privacy-policy");
+  await expect(page.getByText(
+    "Vercel hosts and delivers ProjectScout and provides Web Analytics.",
+    { exact: false },
+  )).toBeVisible();
+
+  await page.goto("/cookie-policy");
+  await expect(page.getByText(
+    "ProjectScout uses Vercel Web Analytics to measure aggregate website traffic.",
+    { exact: false },
+  )).toBeVisible();
+  await expect(page.getByText(
+    "Vercel Web Analytics does not use analytics cookies or local storage.",
+    { exact: false },
+  )).toBeVisible();
+});
+
 test("scroll guide advances through all steps and reverses", async ({ page }) => {
   await page.setViewportSize({ width: 1_440, height: 900 });
   await page.goto("/");
@@ -97,8 +128,6 @@ test("landing story animations reset above their triggers and replay", async ({ 
   const animatedSections = [
     ["evidence", "evidence-title"],
     ["directions", "directions-title"],
-    ["weak-evidence", "weak-evidence-title"],
-    ["audience", "audience-title"],
     ["before-after", "transformation-title"],
     ["principles", "principles-title"],
   ] as const;
@@ -130,8 +159,6 @@ test("every named landing story module renders as a distinct section", async ({ 
     "trust",
     "evidence",
     "directions",
-    "weak-evidence",
-    "audience",
     "before-after",
     "principles",
   ] as const;

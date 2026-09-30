@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
         <header className={styles.intro}>
           <h1>Privacy Policy</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-09-14">September 14, 2026</time>
+            Last updated: <time dateTime="2026-10-01">October 1, 2026</time>
           </p>
           <p className={styles.lede}>
             This policy explains the personal data ProjectScout handles and your
@@ -90,7 +90,17 @@ export default function PrivacyPolicyPage() {
                   processed by infrastructure providers to deliver and protect the
                   service.
                 </li>
+                <li>
+                  aggregated website-usage information, including page views, visited
+                  routes, referrers, approximate country, browser, operating system,
+                  and device type, to measure traffic and improve ProjectScout.
+                </li>
               </ul>
+              <p>
+                ProjectScout currently uses standard page-view analytics and does not
+                send custom analytics events. Analytics reports are aggregated and are
+                not designed to identify individual visitors.
+              </p>
               <p>
                 ProjectScout does not ask for your name, postal address, phone
                 number, contacts, precise location, or payment details. A hosting or
@@ -125,9 +135,16 @@ export default function PrivacyPolicyPage() {
                   recommendations.
                 </li>
                 <li>
-                  <strong>Database, hosting, network, and security providers</strong>
-                  process stored records, service traffic, configuration, and logs
-                  needed to operate ProjectScout.
+                  <strong>Vercel</strong> hosts and delivers ProjectScout and provides
+                  Web Analytics. Vercel processes ordinary hosting traffic and uses
+                  request information to create a daily rotating visitor hash for
+                  anonymous, aggregated traffic reports. The standard analytics
+                  integration does not use analytics cookies or local storage.
+                </li>
+                <li>
+                  <strong>Database, network, and security providers</strong> process
+                  stored records, service traffic, configuration, and logs needed to
+                  operate ProjectScout.
                 </li>
                 <li>
                   <strong>GitHub</strong> receives a bug report only if you choose to
@@ -155,10 +172,12 @@ export default function PrivacyPolicyPage() {
               </p>
               <p>
                 Necessary authentication cookies maintain your Supabase session.
-                ProjectScout does not currently use optional analytics storage,
-                advertising cookies, browser fingerprinting, or third-party embeds.
-                The <Link href="/cookie-policy">Cookie Policy</Link> lists the current
-                cookies and browser storage in more detail.
+                Vercel Web Analytics does not use analytics cookies or local storage,
+                and its visitor hash is not used to follow visitors across different
+                websites or days. ProjectScout does not use advertising cookies or
+                third-party embeds. The <Link href="/cookie-policy">Cookie Policy</Link>
+                {" "}lists the current cookies, browser storage, and cookie-free
+                analytics in more detail.
               </p>
               <p>
                 Server records are retained while reasonably needed to provide and
@@ -166,11 +185,13 @@ export default function PrivacyPolicyPage() {
                 current system has no fixed automatic deletion period. Browser history
                 remains until you remove it, clear site data, or submit an account
                 deletion request. Removing an individual item in the interface deletes
-                the browser copy only. Once an account deletion request is durably
-                recorded, ProjectScout revokes application access and removes this
-                browser&apos;s research history, completed results, pending authentication
-                request, and local authentication session. Unrelated browser preferences
-                are not removed.
+                the browser copy only. Vercel discards the daily analytics visitor
+                identifier after 24 hours; aggregated analytics reports remain available
+                according to the Vercel plan and account settings. Once an account
+                deletion request is durably recorded, ProjectScout revokes application
+                access and removes this browser&apos;s research history, completed results,
+                pending authentication request, and local authentication session.
+                Unrelated browser preferences are not removed.
               </p>
               <p>
                 Account deletion then removes the authentication account before
@@ -201,7 +222,9 @@ export default function PrivacyPolicyPage() {
                 consent. Creating an account does not make consent the legal basis for
                 every necessary processing activity. Sensitive personal information is
                 processed only with specific consent or another basis permitted by
-                Philippine law.
+                Philippine law. ProjectScout relies on legitimate interests to measure
+                aggregate website usage and improve the service using privacy-focused
+                analytics, subject to applicable rights and objections.
               </p>
             </section>
 

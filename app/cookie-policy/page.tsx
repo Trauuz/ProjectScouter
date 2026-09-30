@@ -31,11 +31,11 @@ export default function CookiePolicyPage() {
         <header className={styles.intro}>
           <h1>Cookie Policy</h1>
           <p className={styles.updated}>
-            Last updated: <time dateTime="2026-09-08">September 8, 2026</time>
+            Last updated: <time dateTime="2026-10-01">October 1, 2026</time>
           </p>
           <p className={styles.lede}>
-            ProjectScout currently uses only storage needed to provide requested
-            account and research features.
+            ProjectScout uses storage needed to provide requested account and research
+            features, together with cookie-free Vercel Web Analytics.
           </p>
         </header>
 
@@ -62,7 +62,8 @@ export default function CookiePolicyPage() {
               </p>
               <p>
                 ProjectScout does not currently use advertising, behavioural
-                profiling, cross-site tracking, or optional analytics storage.
+                profiling, cross-site tracking, analytics cookies, or analytics local
+                storage. It does use Vercel Web Analytics to measure aggregate traffic.
               </p>
             </section>
 
@@ -107,23 +108,41 @@ export default function CookiePolicyPage() {
             <section id="analytics-and-embeds">
               <h2>Analytics and Embeds</h2>
               <p>
-                ProjectScout does not currently load an analytics platform, ad pixel,
-                social-media widget, video embed, or other third-party embed in the
-                browser. Research and AI providers receive requests from the server;
-                they are not embedded trackers on these pages.
+                ProjectScout uses Vercel Web Analytics to measure aggregate website
+                traffic. This includes page views, visited routes, referrers,
+                approximate country, browser, operating system, and device type.
+                ProjectScout currently uses standard page-view analytics and does not
+                send custom analytics events.
+              </p>
+              <p>
+                Vercel Web Analytics does not use analytics cookies or local storage.
+                Vercel creates a daily rotating hash from request information to
+                estimate unique visitors. The hash is discarded after 24 hours and is
+                not used to follow visitors across different websites or days. See
+                Vercel&apos;s{" "}
+                <a href="https://vercel.com/docs/analytics/privacy-policy">
+                  Web Analytics privacy and compliance documentation
+                </a>
+                {" "}for more information.
+              </p>
+              <p>
+                ProjectScout does not currently load an ad pixel, social-media widget,
+                video embed, or other third-party embed in the browser. Research and AI
+                providers receive requests from the server; they are not embedded
+                trackers on these pages.
               </p>
             </section>
 
             <section id="consent">
               <h2>Consent</h2>
               <p>
-                ProjectScout is operated from the Philippines and does not show a
-                cookie-consent banner in its current necessary-only, no-tracking
-                setup. If the service is specifically offered in a jurisdiction that
-                requires consent for any of this browser storage, or if optional
-                analytics, advertising, or other non-essential storage is introduced,
-                affected storage will remain off until any required consent is
-                obtained. This policy will also be updated.
+                ProjectScout is operated from the Philippines and does not currently
+                show a cookie-consent banner. Vercel Web Analytics does not place
+                analytics cookies or use analytics local storage. If applicable law
+                requires consent for analytics processing, or if ProjectScout later
+                introduces advertising or other non-essential browser storage, the
+                affected feature will remain off until any required consent is obtained.
+                This policy will also be updated.
               </p>
             </section>
 
